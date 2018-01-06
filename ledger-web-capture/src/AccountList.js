@@ -11,12 +11,14 @@ class AccountList extends Component {
 
 	var initialAccounts = [];
 	if(this.props.payee !== "") {
-	    var payee = window.PAYEE_ACCOUNTS.find((account) => { return account.name.toLowerCase() === this.props.payee.toLowerCase() } );
-	    if(payee) initialAccounts = payee['latestAccounts']
+	    var payee = window.PAYEE_ACCOUNTS.find((account) => {
+		return account.name.toLowerCase() === this.props.payee.toLowerCase();
+	    });
+	    if(payee) initialAccounts = payee['latestAccounts'];
 	}
 
 	if(initialAccounts === undefined || initialAccounts === null || initialAccounts.length === 0) {
-	    initialAccounts = window.ACCOUNTS
+	    initialAccounts = window.ACCOUNTS;
 	}
 
 	console.log(initialAccounts);
@@ -29,31 +31,30 @@ class AccountList extends Component {
     search = (event) => {
 	var searchStr = event.target.value.toLowerCase();
 	if(searchStr === "") {
-	    this.setState({ list: window.ACCOUNTS })
+	    this.setState({ list: window.ACCOUNTS });
 	} else {
 	    this.setState({
 		list: window.ACCOUNTS.filter((name) => { return fuzzyMatch(name.toLowerCase(), searchStr); })
-	    })
+	    });
 	}
     }
 
     render() {
 	return (
-		<div className="react-capture">
-		<header>
+	    <div className="react-capture">
+	      <header>
 		<a className="back" onClick={this.props.onBack}></a>
 		<div className="group">
-		<input name="search" type="search" placeholder="Filter account ..." onChange={this.search} autoFocus autocomplete="off" />
-		    <span className="bar"></span>
+		  <input name="search" type="search" placeholder="Filter account ..." onChange={this.search} autoFocus autocomplete="off" />
+		  <span className="bar"></span>
 		</div>
-		</header>
-		<div className="content">
+	      </header>
+	      <div className="content">
 		<ul className="collection">
-		{console.log("render list", this.state.list) && "abc"}
-		{this.state.list.map(item => <li key={item} onClick={() => { this.props.onSelect(item) }}><span className="title">{item}</span></li>)}
+		  {this.state.list.map(item => <li key={item} onClick={() => { this.props.onSelect(item); }}><span className="title">{item}</span></li>)}
 	        </ul>
-		</div>
-		</div>
+	      </div>
+	    </div>
 	);
     }
 }
