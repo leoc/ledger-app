@@ -45,7 +45,7 @@ class LedgerCapture < Sinatra::Base
 #{transaction['date'].gsub('-', '/')} * #{transaction['payee']}
     ; location: #{transaction['location']}
     #{transaction['account']}  #{transaction['amount']} EUR
-    Assets:Cash
+    #{transaction['creditAccount']}
 XTN
     {:success => "ok"}.to_json
   end
