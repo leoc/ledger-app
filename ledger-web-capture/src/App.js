@@ -163,25 +163,25 @@ class App extends Component {
 		  <div className="content">
 		    <form ref="form">
 		      <div className="group">
-			<input type="date" name="date" placeholder="" value={this.state.date} onChange={this.setDate} required={true} />
+			<input type="date" name="date" placeholder=" " value={this.state.date} onChange={this.setDate} required={true} />
 			<span className="bar"></span>
 			<label>Date</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="payee" placeholder="" value={this.state.payee} onClick={this.viewPayeeList} required={true} />
+			<input type="text" name="payee" placeholder=" " value={this.state.payee} onClick={this.viewPayeeList} required={true} />
 			<span className="bar"></span>
 			<label>Payee</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="location" placeholder="" value={this.state.location} onClick={this.viewLocationList} />
+			<input type="text" name="location" placeholder=" " value={this.state.location} onClick={this.viewLocationList} />
 			<label>Location</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="debit_account" placeholder="" value={this.state.account} onClick={this.viewAccountList} required />
+			<input type="text" name="debit_account" placeholder=" " value={this.state.account} onClick={this.viewAccountList} required />
 			<label>Debit Account</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="credit_account" placeholder="" defaultValue={this.state.creditAccount} onClick={this.viewCreditAccountList} required />
+			<input type="text" name="credit_account" placeholder=" " value={this.state.creditAccount} onClick={this.viewCreditAccountList} required />
 			<label>Credit Account</label>
 		      </div>
 		      <div className="columns">
@@ -192,7 +192,7 @@ class App extends Component {
 			</select>
 		      </div>
 		      <div className="group">
-			<input type="text" name="note" placeholder="" value={this.state.note} onChange={this.changeNote} />
+			<input type="text" name="note" placeholder=" " value={this.state.note} onChange={this.changeNote} />
 			<label>Note</label>
 		      </div>
 		    </form>
