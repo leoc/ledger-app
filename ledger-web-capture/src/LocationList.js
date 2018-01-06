@@ -111,7 +111,19 @@ class LocationList extends Component {
 	      <header>
 		<button className="back" onClick={this.props.onBack}></button>
 		<div className="group">
-		  <input name="searchName" type="search" placeholder="Search nearby ..." onChange={this.searchNameChanged} autoComplete="off" autoFocus />
+		  <input
+		    name="searchName"
+		    type="search"
+		    defaultValue={this.props.location}
+		    placeholder="Search nearby ..."
+		    onChange={this.searchNameChanged}
+		    onFocus={(e) => {
+			var val = e.target.value;
+			e.target.value = '';
+			e.target.value = val;
+		    }}
+		    autoComplete="off"
+		    autoFocus />
 		  <span className="bar"></span>
 		</div>
 	      </header>
