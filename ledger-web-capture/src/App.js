@@ -29,7 +29,8 @@ class App extends Component {
 	location: '',
 	account: '',
 	creditAccount: 'Assets:Cash',
-	amount: ''
+	amount: '',
+	note: ''
     }
 
     guessAccountByLocation = (types) => {
@@ -99,7 +100,8 @@ class App extends Component {
 		    location: '',
 		    account: '',
 		    creditAccount: 'Assets:Cash',
-		    amount: ''
+		    amount: '',
+		    note: ''
 		});
 	    });
     }
@@ -110,6 +112,10 @@ class App extends Component {
 
     chooseCreditAccount = (account) => {
 	this.setState({ creditAccount: account, view: 'form' });
+    }
+
+    changeNote = (event) => {
+	this.setState({ note: event.target.value, view: 'form' });
     }
 
     viewPayeeList = () => {
@@ -184,6 +190,10 @@ class App extends Component {
 			  <option>EUR</option>
 			  <option>USD</option>
 			</select>
+		      </div>
+		      <div className="group">
+			<input type="text" name="note" placeholder="" value={this.state.note} onChange={this.changeNote} />
+			<label>Note</label>
 		      </div>
 		    </form>
 		  </div>
