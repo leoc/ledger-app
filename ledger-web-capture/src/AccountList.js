@@ -46,8 +46,10 @@ class AccountList extends Component {
 	    <div className="react-capture">
 	      <header>
 		<button className="back" onClick={this.props.onBack}></button>
+		<button className="submit right" onClick={() => { this.props.onSelect(this.refs.search.value); } }></button>
 		<div className="group">
 		  <input
+		    ref="search"
 		    name="search"
 		    defaultValue={this.props.account || ''}
 		    type="search"
