@@ -149,7 +149,7 @@ class App extends Component {
 			<label>Payee</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="location" placeholder="" value={this.state.location} onClick={this.viewLocationList} required />
+			<input type="text" name="location" placeholder="" value={this.state.location} onClick={this.viewLocationList} />
 			<label>Location</label>
 		      </div>
 		      <div className="group">
