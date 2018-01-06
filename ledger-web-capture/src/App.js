@@ -64,11 +64,13 @@ class App extends Component {
     }
 
     chooseLocation = (location) => {
-	this.setState({
-	    payee: location.name,
-	    location: location.vicinity,
-	    account: this.guessAccountByLocation(location.types),
-	    view: 'form'
+	this.setState((prevState) => {
+	    return {
+		payee: location.name,
+		location: location.vicinity,
+		account: prevState.account || this.guessAccountByLocation(location.types),
+		view: 'form'
+	    }
 	});
     }
 
