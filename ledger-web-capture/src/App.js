@@ -119,7 +119,6 @@ class App extends Component {
     }
 
     setAmount = (event, masked) => {
-	var value = event.target.value;
 	this.setState({ amount: masked });
     }
 
