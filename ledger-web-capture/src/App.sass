@@ -23,24 +23,26 @@ body
     line-height: 56px
 
     button
+      position: absolute
+      top: 0
       border: 0
       background: 0
       height: 56px
       width: 56px
+      outline: none
+      cursor: pointer
       &:after
         color: #fff
         font-size: 24px
         font-family: FontAwesome
 
     button.back
-      position: absolute
       left: 0
       &:after
         content: "\f104"
         font-size: 35px
 
     button.submit
-      position: absolute
       right: 0
       &:after
         content: "\f00c"
