@@ -40,13 +40,13 @@ class LedgerCapture < Sinatra::Base
     content_type :json
     transaction = JSON.parse(request.body.read)
     puts transaction.inspect
-    File.open(ENV['LEDGER_CAPTURE_FILE'], 'a') { |f| f.write(<<XTN) }
-
-#{transaction['date'].gsub('-', '/')} * #{transaction['payee']}
-    ; location: #{transaction['location']}
-    #{transaction['account']}  #{transaction['amount']} EUR
-    #{transaction['creditAccount']}
-XTN
+    xtn = []
+    xtn << "\n\n#{transaction['date'].gsub('-', '/')} * #{transaction['payee']}"
+    xtn << "    ; location: #{transaction['location']}"
+    xtn << "    ; #{transaction['note']}" if transaction['note'].length > 0
+    xtn << "    #{transaction['account']}  #{transaction['amount']} EUR"
+    xtn << "    #{transaction['creditAccount']}"
+    File.open(ENV['LEDGER_CAPTURE_FILE'], 'a') { |f| f.write(xtn.join("\n")) }
     {:success => "ok"}.to_json
   end
   put '' do
