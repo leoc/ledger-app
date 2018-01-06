@@ -103,12 +103,18 @@ class LocationList extends Component {
 	).toFixed(2);
     }
 
+    submitValue = (event) => {
+	event.preventDefault();
+	this.props.onSubmit(this.refs.search.value);
+    }
+
     render() {
 	return (
 	    <div className="react-capture">
 	      <header>
-		<button className="back" onClick={this.props.onBack}></button>
-		<button className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value); } }></button>
+		<form onSubmit={this.submitValue}>
+		<button className="back" type="button" onClick={this.props.onBack}></button>
+		<button className="submit right" type="submit"></button>
 		<div className="group">
 		  <input
 		    name="searchName"
@@ -126,6 +132,7 @@ class LocationList extends Component {
 		    autoFocus />
 		  <span className="bar"></span>
 		</div>
+		</form>
 	      </header>
 	      <div className="content">
 		<ul className="collection">
