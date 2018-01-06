@@ -42,6 +42,11 @@ class PayeeList extends Component {
 		      placeholder="Payee"
 		      defaultValue={this.props.payee}
 		      onChange={this.search}
+		      onFocus={(e) => {
+			  var val = e.target.value;
+			  e.target.value = '';
+			  e.target.value = val;
+		      }}
 		      autoFocus
 		      autoComplete="off" />
 		    <span className="bar"></span>
