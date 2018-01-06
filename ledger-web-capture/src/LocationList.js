@@ -117,16 +117,11 @@ class LocationList extends Component {
 	      </header>
 	      <div className="content">
 		<ul className="collection">
-		  {this.state.list.map(item => <li key={item.name} onClick={() => { this.props.onSelect(item) }}>
-				       <span className="distance">{this.distance(item)} km</span>
-					   <span className="title">{item.name}</span>
-					       <p>{item.vicinity}</p>
-		  </li>)}
-
-	    {this.state.nextPageToken && (<li className="load-more"><a onClick={this.loadMore}>Load more ...</a></li>)}
-	    </ul>
-		</div>
-		</div>
+		  {this.state.list.map(item => { return <li key={item.name} onClick={() => { this.props.onSelect(item); }}> <span className="distance">{this.distance(item)} km</span> <span className="title">{item.name}</span> <p>{item.vicinity}</p> </li>;})}
+		  {this.state.nextPageToken && (<li className="load-more"><a onClick={this.loadMore}>Load more ...</a></li>)}
+	        </ul>
+	      </div>
+	    </div>
 	);
     }
 }
