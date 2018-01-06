@@ -84,7 +84,12 @@ class App extends Component {
 	});
     }
 
-    submitCaptureForm = () => {
+    triggerFormSubmit = () => {
+	this.refs.form.submit();
+    }
+
+    submitCaptureForm = (event) => {
+	event.preventDefault()
 	if(!this.refs.form.checkValidity()) return;
 	fetch(
 	    "/transactions",
@@ -161,7 +166,7 @@ class App extends Component {
 		    <h2>Capture</h2>
 		  </header>
 		  <div className="content">
-		    <form ref="form">
+		    <form ref="form" onSubmit={this.submitCaptureForm}>
 		      <div className="group">
 			<input type="date" name="date" placeholder=" " value={this.state.date} onChange={this.setDate} required={true} />
 			<span className="bar"></span>
@@ -195,6 +200,7 @@ class App extends Component {
 			<input type="text" name="note" placeholder=" " value={this.state.note} onChange={this.changeNote} />
 			<label>Note</label>
 		      </div>
+		      <input type="submit" value="Capture Transaction" />
 		    </form>
 		  </div>
 		</div>
