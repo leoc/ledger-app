@@ -14,7 +14,11 @@ class AccountList extends Component {
 	    var payee = window.PAYEE_ACCOUNTS.find((account) => {
 		return account.name.toLowerCase() === this.props.payee.toLowerCase();
 	    });
-	    if(payee) initialAccounts = payee['latestAccounts'];
+	    var latestAccounts = [];
+	    if(payee) latestAccounts = payee['latestAccounts'];
+	    initialAccounts = window.ACCOUNTS.filter((name) => {
+		return latestAccounts.includes(name) || fuzzyMatch(name.toLowerCase(), this.props.payee.toLowerCase());
+	    });
 	}
 
 	if(initialAccounts === undefined || initialAccounts === null || initialAccounts.length === 0) {
