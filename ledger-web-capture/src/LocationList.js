@@ -68,11 +68,9 @@ class LocationList extends Component {
     }
 
     loadMore = () => {
-	console.log("Load More")
 	fetch("/maps/api/place/nearbysearch/json?pagetoken=" + this.state.nextPageToken + "&key=AIzaSyA4Kyzn8NbzUQZndq-hW4p-3viVaki5gsA", { headers: api_headers })
 	    .then((response) => { return response.json(); })
 	    .then((json) => {
-		console.log(json);
 		this.setState((prevState) => ({
 		    nextPageToken: json.next_page_token,
 		    list: prevState.list.concat(json.results)
