@@ -1,0 +1,17 @@
+sudo: required
+services:
+  - docker
+cache:
+  yarn: true
+  directories:
+    - ledger-web-capture/node_modules
+before_install:
+  - cd ledger-web-capture && yarn && yarn build && cd ..
+  - docker build -t leocgit/ledger-app:master .
+script:
+  - docker images leocgit/ledger-app:master
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
+    docker push leocgit/ledger-app:master;
+    fi
