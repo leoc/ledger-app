@@ -10,7 +10,7 @@ class AccountList extends Component {
 	super(props);
 
 	var initialAccounts = [];
-	if(this.props.payee !== "") {
+	if(this.props.payee && this.props.payee !== "") {
 	    var payee = window.PAYEE_ACCOUNTS.find((account) => {
 		return account.name.toLowerCase() === this.props.payee.toLowerCase();
 	    });
