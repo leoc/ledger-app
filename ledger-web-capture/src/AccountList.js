@@ -47,7 +47,19 @@ class AccountList extends Component {
 	      <header>
 		<button className="back" onClick={this.props.onBack}></button>
 		<div className="group">
-		  <input name="search" type="search" placeholder="Filter account ..." onChange={this.search} autoFocus autoComplete="off" />
+		  <input
+		    name="search"
+		    defaultValue={this.props.account || ''}
+		    type="search"
+		    placeholder="Filter account ..."
+		    onChange={this.search}
+		    onFocus={(e) => {
+			var val = e.target.value;
+			e.target.value = '';
+			e.target.value = val;
+		    }}
+		    autoFocus
+		    autoComplete="off" />
 		  <span className="bar"></span>
 		</div>
 	      </header>

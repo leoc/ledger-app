@@ -186,9 +186,9 @@ class App extends Component {
 	} else if (this.state.view === "locationList") {
 	    return <LocationList onBack={this.viewForm} onSelect={this.chooseLocation}/>;
 	} else if (this.state.view === "accountList") {
-	    return <AccountList payee={this.state.payee} onBack={this.viewForm} onSelect={this.chooseAccount}/>;
+	    return <AccountList payee={this.state.payee} account={this.state.account} onBack={this.viewForm} onSelect={this.chooseAccount}/>;
 	} else if (this.state.view === "creditAccountList") {
-	    return <AccountList onBack={this.viewForm} onSelect={this.chooseCreditAccount}/>;
+	    return <AccountList account={this.state.creditAccount} onBack={this.viewForm} onSelect={this.chooseCreditAccount}/>;
 	}
 	return "";
     }
