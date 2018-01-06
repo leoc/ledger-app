@@ -96,8 +96,10 @@ ledgit:
 
 This will check for new transactions every three hours.
 
-[Github Repo](https://github.com/leoc/ledgit)
-[Dockerhub](https://hub.docker.com/r/leocgit/ledgit/)
+Further reading at:
+
+* [Github Repo](https://github.com/leoc/ledgit)
+* [Dockerhub](https://hub.docker.com/r/leocgit/ledgit/)
 
 ### Gitdocs
 
@@ -121,5 +123,5 @@ gitdocs:
 
 Further reading at:
 
-[Github Repo](https://github.com/leoc/docker-gitdocs)
-[Dockerhub](https://hub.docker.com/r/leocgit/gitdocs/)
+* [Github Repo](https://github.com/leoc/docker-gitdocs)
+* [Dockerhub](https://hub.docker.com/r/leocgit/gitdocs/)
