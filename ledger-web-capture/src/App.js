@@ -139,25 +139,25 @@ class App extends Component {
 		  <div className="content">
 		    <form ref="form">
 		      <div className="group">
-			<input type="date" name="date" value={this.state.date} onChange={this.setDate} required={true} />
+			<input type="date" name="date" placeholder="" value={this.state.date} onChange={this.setDate} required={true} />
 			<span className="bar"></span>
 			<label>Date</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="payee" value={this.state.payee} onClick={this.viewPayeeList} required={true} />
+			<input type="text" name="payee" placeholder="" value={this.state.payee} onClick={this.viewPayeeList} required={true} />
 			<span className="bar"></span>
 			<label>Payee</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="location" value={this.state.location} onClick={this.viewLocationList} required />
+			<input type="text" name="location" placeholder="" value={this.state.location} onClick={this.viewLocationList} required />
 			<label>Location</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="account" value={this.state.account} onClick={this.viewAccountList} required />
+			<input type="text" name="debit_account" placeholder="" value={this.state.account} onClick={this.viewAccountList} required />
 			<label>Debit Account</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="account" defaultValue={"Assets:Cash"} required />
+			<input type="text" name="credit_account" placeholder="" defaultValue={"Assets:Cash"} required />
 			<label>Credit Account</label>
 		      </div>
 		      <div className="columns">

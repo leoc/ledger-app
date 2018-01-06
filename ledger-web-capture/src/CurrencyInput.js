@@ -46,7 +46,8 @@ class CurrencyInput extends Component {
 	      <input
 		ref="currencyInput"
 		className="hidden-currency-input"
-		type="number"
+	        type="number"
+	        placeholder=""
 		pattern="\d+\.\d{2}"
 		value={this.state.raw}
 		onChange={this.trackInput}
