@@ -109,7 +109,7 @@ class LocationList extends Component {
 	return (
 	    <div className="react-capture">
 	      <header>
-		<a className="back" onClick={this.props.onBack}></a>
+		<button className="back" onClick={this.props.onBack}></button>
 		<div className="group">
 		  <input name="searchName" type="search" placeholder="Search nearby ..." onChange={this.searchNameChanged} autoComplete="off" autoFocus />
 		  <span className="bar"></span>

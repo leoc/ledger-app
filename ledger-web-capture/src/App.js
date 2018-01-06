@@ -132,8 +132,8 @@ class App extends Component {
 	    return (
 		<div className="react-capture">
 		  <header>
-		    <a className="back" onClick={this.goToRoot}></a>
-		    <a className="submit right" onClick={this.submitCaptureForm}></a>
+		    <button className="back" onClick={this.goToRoot}></button>
+		    <button className="submit right" onClick={this.submitCaptureForm}></button>
 		    <h2>Capture</h2>
 		  </header>
 		  <div className="content">

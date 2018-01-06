@@ -26,8 +26,8 @@ class PayeeList extends Component {
 	return (
 		<div className="react-capture">
 		<header>
-		<a className="back" onClick={this.props.onBack}></a>
-		<a className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value) } }></a>
+		<button className="back" onClick={this.props.onBack}></button>
+		<button className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value) } }></button>
 		<div className="group">
 		<input ref="search" name="search" type="search" placeholder="Payee" defaultValue={this.props.payee} onChange={this.search} autoFocus autocomplete="off" />
 		    <span className="bar"></span>

@@ -22,17 +22,28 @@ body
     height: 56px
     line-height: 56px
 
-    a.back
-      position: absolute
-      left: 0
+    button
+      border: 0
+      background: 0
       height: 56px
       width: 56px
       &:after
-        content: '<'
-        font-size: 30px
-        background-color: none
-        border: 0px
         color: #fff
+        font-size: 24px
+        font-family: FontAwesome
+
+    button.back
+      position: absolute
+      left: 0
+      &:after
+        content: "\f104"
+        font-size: 35px
+
+    button.submit
+      position: absolute
+      right: 0
+      &:after
+        content: "\f00c"
 
     h2
       font-family: sans-serif
@@ -212,16 +223,6 @@ header
       background: #fff
   .right + .group
     margin: 10px 60px 0 60px
-
-  .submit
-    display: inline-block
-    float: right
-    color: #fff
-    width: 56px
-    line-height: 56px
-    &:after
-      content: "\f00c"
-      font-family: FontAwesome
 
 ul
   li.load-more

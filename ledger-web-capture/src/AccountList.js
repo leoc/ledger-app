@@ -43,7 +43,7 @@ class AccountList extends Component {
 	return (
 	    <div className="react-capture">
 	      <header>
-		<a className="back" onClick={this.props.onBack}></a>
+		<button className="back" onClick={this.props.onBack}></button>
 		<div className="group">
 		  <input name="search" type="search" placeholder="Filter account ..." onChange={this.search} autoFocus autocomplete="off" />
 		  <span className="bar"></span>
