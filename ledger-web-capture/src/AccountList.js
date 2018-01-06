@@ -21,8 +21,6 @@ class AccountList extends Component {
 	    initialAccounts = window.ACCOUNTS;
 	}
 
-	console.log(initialAccounts);
-
 	this.state = {
 	    list: initialAccounts
 	};
