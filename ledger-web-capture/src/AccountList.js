@@ -41,29 +41,36 @@ class AccountList extends Component {
 	}
     }
 
+    submitValue = (event) => {
+	event.preventDefault();
+	this.props.onSelect(this.refs.search.value);
+    }
+
     render() {
 	return (
 	    <div className="react-capture">
 	      <header>
-		<button className="back" onClick={this.props.onBack}></button>
-		<button className="submit right" onClick={() => { this.props.onSelect(this.refs.search.value); } }></button>
-		<div className="group">
-		  <input
-		    ref="search"
-		    name="search"
-		    defaultValue={this.props.account || ''}
-		    type="search"
-		    placeholder="Filter account ..."
-		    onChange={this.search}
-		    onFocus={(e) => {
-			var val = e.target.value;
-			e.target.value = '';
-			e.target.value = val;
-		    }}
-		    autoFocus
-		    autoComplete="off" />
-		  <span className="bar"></span>
-		</div>
+		<form onSubmit={this.submitValue}>
+		  <button className="back" onClick={this.props.onBack} type="button"></button>
+		  <button className="submit right" type="submit"></button>
+		  <div className="group">
+		    <input
+		      ref="search"
+		      name="search"
+		      defaultValue={this.props.account || ''}
+		      type="search"
+		      placeholder="Filter account ..."
+		      onChange={this.search}
+		      onFocus={(e) => {
+			  var val = e.target.value;
+			  e.target.value = '';
+			  e.target.value = val;
+		      }}
+		      autoFocus
+		      autoComplete="off" />
+		    <span className="bar"></span>
+		  </div>
+		</form>
 	      </header>
 	      <div className="content">
 		<ul className="collection">
