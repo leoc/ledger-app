@@ -1,0 +1,229 @@
+$fa-font-path: '~font-awesome/fonts/'
+@import "~font-awesome/scss/font-awesome"
+
+body
+  margin: 0
+  padding: 0
+
+.react-capture
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  font-family: Roboto
+
+  header
+    position: fixed
+    z-index: 100000
+    top: 0
+    width: 100%
+    background: #000
+    text-align: center
+    height: 56px
+    line-height: 56px
+
+    a.back
+      position: absolute
+      left: 0
+      height: 56px
+      width: 56px
+      &:after
+        content: '<'
+        font-size: 30px
+        background-color: none
+        border: 0px
+        color: #fff
+
+    h2
+      font-family: sans-serif
+      color: #fff
+      font-weight: 400
+      line-height: 56px
+      margin: 0
+
+  .content
+    margin-top: 56px
+    padding: 20px
+    form
+      padding-top: 25px
+
+ul.collection
+  padding-left: 0
+  list-style-type: none
+  margin: .5rem 0 1rem 0
+  border: 1px solid #e0e0e0
+  border-radius: 2px
+  overflow: hidden
+  position: relative
+
+  li
+    line-height: 1.5rem
+    background-color: #fff
+    padding: 10px
+    margin: 0
+    border-bottom: 1px solid #e0e0e0
+    list-style-type: none
+    p
+      margin: 0
+      font-size: 0.9em
+      color: rgba(0,0,0,0.71)
+      padding: 0
+
+*
+  box-sizing: border-box
+
+/* form starting stylings ------------------------------- */
+.group
+  position: relative
+  margin-bottom: 45px
+
+input
+  font-size: 18px
+  padding: 10px 10px 10px 5px
+  display: block
+  width: 100%
+  border: none
+  border-bottom: 1px solid #757575
+  height: 46px
+
+input:focus
+  outline: none
+
+/* LABEL ======================================= */
+label
+  color: #999
+  font-family: Roboto
+  font-size: 18px
+  font-weight: normal
+  position: absolute
+  pointer-events: none
+  left: 5px
+  top: 10px
+  transition: 0.2s ease all
+  -moz-transition: 0.2s ease all
+  -webkit-transition: 0.2s ease all
+
+
+/* active state */
+input:focus ~ label, input:valid ~ label
+  top: -20px
+  font-size: 14px
+  color: #5264AE
+
+
+/* BOTTOM BARS ================================= */
+.bar
+  position: relative
+  display: block
+  width: 100%
+
+.bar:before, .bar:after
+  content: ''
+  height: 2px
+  width: 0
+  bottom: 0px
+  position: absolute
+  background: #5264AE
+  transition: 0.2s ease all
+  -moz-transition: 0.2s ease all
+  -webkit-transition: 0.2s ease all
+
+.bar:before
+  left: 50%
+
+.bar:after
+  right: 50%
+
+input:focus ~ .bar:before,
+input:focus ~ .bar:after
+  width: 50%
+
+@-webkit-keyframes inputHighlighter
+  from
+    background: #5264AE
+  to
+    width: 0
+    background: transparent
+@-moz-keyframes inputHighlighter
+  from
+    background: #5264AE
+  to
+    width: 0
+    background: transparent
+@keyframes inputHighlighter
+  from
+    background: #5264AE
+  to
+    width: 0
+    background: transparent
+
+.columns
+  display: flex
+  &> .currency-input
+    flex-grow: 1
+  select
+    flex-basis: 85px
+    margin-left: 20px
+    height: 46px
+
+.currency-input
+  input
+    color: #fff
+  .overlay
+    position: absolute
+    top: 0
+    left: 5px
+    line-height: 46px
+    font-size: 18px
+    font-family: Roboto
+    opacity: 0
+
+  input:valid + .overlay, input:focus + .overlay
+    opacity: 1
+
+select
+  font-family: Roboto
+  background-color: transparent
+  width: 100%
+  padding: 10px 10px 10px 5px
+  font-size: 18px
+  color: #999
+  border: none
+  border-bottom: 1px solid #757575
+
+/* Remove focus */
+select:focus
+  outline: none
+
+.collection li span.distance
+  float: right
+
+header
+  .group
+    margin: 10px 10px 0 60px
+    input
+      background: none
+      color: #fff
+      line-height: 38px
+      height: 38px
+    .bar
+      border-bottom: 1px solid #fff
+    .bar:before, .bar:after
+      background: #fff
+  .right + .group
+    margin: 10px 60px 0 60px
+
+  .submit
+    display: inline-block
+    float: right
+    color: #fff
+    width: 56px
+    line-height: 56px
+    &:after
+      content: "\f00c"
+      font-family: FontAwesome
+
+ul
+  li.load-more
+    line-height: 50px
+    text-align: center

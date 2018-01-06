@@ -1,0 +1,37 @@
+postgres:
+  image: postgres:9.6
+  volumes:
+    - ./tmp/postgres:/var/lib/postgresql/data
+app:
+  build: .
+  ports:
+    - 4040:4040
+  volumes:
+    - .:/app
+    - ${LEDGER_DIR}:/ledger
+  environment:
+    PORT: 4040
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_USERNAME: postgres
+    DB_PASSWORD:
+    LEDGER_FILE: /ledger/main.ledger
+    LEDGER_CAPTURE_FILE: /ledger/personal.ledger
+  links:
+    - postgres
+watcher:
+  build: .
+  command: ["guard", "-w", "/ledger"]
+  tty: true
+  volumes:
+    - .:/app
+    - ${LEDGER_DIR}:/ledger
+  environment:
+    PORT: 4040
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_USERNAME: postgres
+    DB_PASSWORD:
+    LEDGER_FILE: /ledger/main.ledger
+  links:
+    - postgres

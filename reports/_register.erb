@@ -1,0 +1,68 @@
+<% default 'cleared', 'on' %>
+<% default 'include_virtual', false %>
+<% @years = query do %>
+  select xtn_year from accounts_years group by xtn_year order by xtn_year desc
+<% end %>
+<% @months = query do %>
+  select xtn_month from accounts_months group by xtn_month order by xtn_month desc
+<% end %>
+<% if params[:xtn_id] && params[:xtn_id] != '' %>
+  <% @xtn_metadata = query do %>
+    select jtags from ledger where xtn_id = :xtn_id
+  <% end %>
+<% end %>
+<div class="page-header">
+  <h1>Register</h1>
+</div>
+<div class="row">
+  <div class="span12">
+  <form class="form form-inline">
+    <input type="hidden" name="xtn_id" value="<%= params[:xtn_id] %>">
+    <input name="account" type="text" class="xlarge" style="height: 27px" placeholder="Account" value="<%= params[:account] %>">
+    <input name="payee" type="text" class="xlarge" style="height: 27px" placeholder="Payee" value="<%= params[:payee] %>">
+    <select name="year" class="input-small">
+      <% @selected_year = params[:year].to_s == "" ? nil : Date.parse(params[:year]).year %>
+      <option value="">Year</option>
+      <% @years.each do |row| %>
+      <option value="<%= row[0].value %>" <%= (@selected_year == row[0].value.year) ? "selected" : "" %>><%= row[0].value.year %></option>
+      <% end %>
+    </select>
+    <select name="month" class="input-small">
+      <% @selected_month = params[:month].to_s == "" ? nil : Date.parse(params[:month]).to_s%>
+      <option value="">Month</option>
+      <% @months.each do |row| %>
+      <option value="<%= row[0].value %>" <%= (@selected_month == row[0].value.to_s) ? "selected" : "" %>><%= row[0].value.to_s %></option>
+      <% end %>
+    </select>
+    <input name="include_virtual" type="checkbox" <%= params[:include_virtual].to_s == "on" ? "checked" : "" %>> Include Virtual
+    <input type="submit" value="Update" class="btn">
+  </form>
+  </div>
+</div>
+<div class="row">
+  <div class="span12">
+    <%= table RegisterReport.run do |t|
+          RegisterReport.decorate(t)
+        end
+    %>
+  </div>
+</div>
+<% if @xtn_metadata %>
+  <% @parsed_metadata = JSON.parse(@xtn_metadata.rows[0][0].value) %>  
+  <% if @parsed_metadata.keys.length > 0 %>
+    <div class="row">
+      <div class="span4">
+        <h4>Metadata</h4>
+        <table class="table table-striped table-hover table-condensed table-bordered">
+  
+          <% @parsed_metadata.keys.sort.each do |key| %>
+            <tr>
+              <td><strong><%= key %></strong></td>
+              <td><%= @parsed_metadata[key] %></td>
+            </tr>
+          <% end %>
+        </table>
+      </div>
+    </div>
+  <% end %>
+<% end %>

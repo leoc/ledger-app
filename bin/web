@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "Migrating"
+rake migrate
+
+if [[ $RACK_ENV == "production" ]]; then
+    exec bundle exec rackup -p $PORT -o 0.0.0.0 2>&1 | logger -t ledger-app-web
+else
+    exec bundle exec rackup -p $PORT -o 0.0.0.0
+fi

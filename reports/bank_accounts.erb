@@ -1,0 +1,30 @@
+<div class="page-title">
+  <h1>Bank Accounts</h1>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <% @schwab = query do %>
+      select
+        account as "Account",
+        '' as "Website",
+        max(xtn_date) as "Last Txn",
+        sum(case when cleared then amount else 0 end) as "Bank Amount",
+        sum(amount) as "Real Amount"
+      from
+        ledger
+      where
+        account ~ '<%= Constants::CURRENT_ACCOUNTS %>'
+        or account ~ 'Liabilities:(Chase|Loans:Mortgage)'
+      group by
+        account
+      having
+        round(sum(amount)) != 0
+      order by
+        account
+    <% end %>
+    <%= @schwab.error %>
+    <%= table @schwab do |t|
+          t.link /Account/ => '/reports/_register?account=:this&cleared='
+        end %>
+  </div>
+</div>

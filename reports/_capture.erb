@@ -1,0 +1,29 @@
+<div id="root"></div>
+<script>
+<%
+  @transactions = LedgerWeb::Database.handle.fetch("SELECT ledger.*, locations.address
+FROM (
+  SELECT MAX(xtn_date) AS last_xtn_date, note, account, COUNT(1)
+  FROM ledger
+  WHERE xtn_id IN (SELECT xtn_id FROM ledger WHERE account ~ 'Assets:Cash')
+  GROUP BY note, account HAVING account ~ '(Expenses:|Assets:Receivables)'
+) ledger
+LEFT JOIN (
+  SELECT DISTINCT note, jtags->>'location' AS address
+  FROM ledger
+  WHERE jtags->'location' IS NOT NULL
+) locations ON ledger.note = locations.note
+ORDER BY last_xtn_date DESC, count DESC", {})
+%>
+  window.LATEST_TRANSACTIONS = <%= @transactions.map { |t| { 'payee' => t[:note], 'location' => t[:address], 'account' => t[:account] } }.to_json %>
+
+<%
+  @payees = LedgerWeb::Database.handle.fetch("SELECT note as payee, json_strip_nulls(json_agg(account)) as latestAccounts FROM (SELECT account, note, COUNT(1) as count FROM ledger WHERE xtn_id IN (SELECT DISTINCT xtn_id FROM ledger WHERE account ~ 'Assets:Cash') GROUP BY account, note ORDER BY count DESC) ledger GROUP BY note ORDER BY note", {})
+%>
+  window.PAYEE_ACCOUNTS = <%= @payees.map { |a| { 'name' => a[:payee], 'latestAccounts' => JSON.parse(a[:latestaccounts]) }}.to_json %>
+<%
+  @accounts = LedgerWeb::Database.handle.fetch("SELECT DISTINCT account FROM ledger ORDER BY account", {})
+%>
+  window.ACCOUNTS = <%= @accounts.map { |a| a[:account] }.to_json %>
+</script>
+<script type="text/javascript" src="/react/static/js/<%= File.basename(Dir["/app/public/react/static/js/*.js"].first) %>"></script>

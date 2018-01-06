@@ -1,0 +1,199 @@
+<% require 'xirr' %>
+
+<script type="text/javascript" src="/public/js/canvasjs.min.js"></script>
+<% @nav_data = query do %>
+with months as (
+    select
+        xtn_month
+    from
+        calendar
+    where
+        xtn_month between '2011-06-01' and now()::date
+    group by
+        xtn_month
+    order by
+        xtn_month
+), ending_prices as (
+    select 
+        xtn_month::date as xtn_month,
+        commodity, 
+        price
+    from (
+        select 
+            date_trunc('month', price_date) as xtn_month,
+            commodity,
+            price,
+            row_number() over (partition by date_trunc('month', price_date), commodity order by price_date desc) as rk
+       from
+            prices
+    ) x
+    where rk = 1
+), stocks as (
+    select
+        xtn_month,
+        commodity,
+        sum(cost) as cost,
+        sum(amount) as amount
+    from
+        ledger
+    where
+        account ~ 'Assets:Investments'
+    group by
+        xtn_month,
+        commodity
+    order by
+        xtn_month,
+        commodity
+), stock_assets as (
+    select
+        xtn_month,
+        sum(coalesce(cost, 0)) as cost,
+        sum(case when commodity = '$' then amount else amount * (select price from ending_prices p where p.xtn_month <= x.xtn_month and p.commodity = x.commodity order by p.xtn_month desc limit 1) end)  as amount
+    from (
+        select
+            xtn_month,
+            commodity,
+            (select sum(cost) from stocks s where s.commodity = l.commodity and xtn_month = m.xtn_month) as cost,
+            (select sum(amount) from stocks s where s.commodity = l.commodity and xtn_month <= m.xtn_month) as amount
+        from
+            months m,
+            (select distinct commodity from stocks) l
+        order by
+            xtn_month,
+            commodity
+    ) x
+    group by
+        xtn_month
+) select * from stock_assets;
+<% end %>
+
+<% STDERR.puts @nav_data.error %>
+
+<%
+  @shares = 1000
+  @start_nav = @nav = (24031.65 / @shares)
+  cf = Xirr::Cashflow.new
+  cf << Xirr::Transaction.new(24031.65, date: Date.new(2011,5,31))
+
+  @table_data = @nav_data.rows.map do |row|
+    start_shares = @shares
+    shares_in_out = row[1].value / @nav
+    end_shares = start_shares + shares_in_out
+    @shares = end_shares
+    @nav = row[2].value / @shares
+    cf << Xirr::Transaction.new(row[1].value.to_f, date: row[0].value)
+
+    {
+      start_shares: start_shares,
+      cost_in_out: row[1].value,
+      shares_in_out: shares_in_out,
+      end_shares: end_shares,
+      shares: @shares.dup,
+      nav: @nav.dup,
+      amount: row[2].value,
+      date: row[0].value,
+    }
+  end
+  cf << Xirr::Transaction.new((@nav_data.rows[-1][2].value * -1).to_f, date: Date.today)
+  @xirr = sprintf("%0.2f%", cf.xirr * 100)
+%>
+
+<div class="page-header">
+  <h1>Investment Performance</h1>
+</div>
+
+<div class="row" style="margin-bottom: 2em;">
+  <div class="span12">
+    <p>
+      This shows our investment performance modeled as a mutual fund. It includes directly-controlled taxable and non-taxable accounts, but does not include
+      any employer 401(k)s until they were rolled into the Vangurd IRA, except the Okapi LLC 401(k).
+      Our initial fund value on May 31, 2011 was $24,031.65 split among 1,000 shares, giving us an initial NAV of <%= sprintf('$%0.2f', @start_nav) %>.
+    </p>
+    <p>
+      XIRR: <strong><%= @xirr %></strong>
+    </p>    
+  </div>
+</div>
+
+<div class="row no-pdf">
+  <div class="span12" style="height: 500px">
+    <script type="text/javascript">
+      $(function() {
+        var chart = new CanvasJS.Chart('chart-container', {
+          axisX: {
+            gridColor: "silver",
+            tickColor: "silver",
+            valueFormatString: "YYYY/MM",
+            intervalType: "month",
+            interval: 12
+          },
+          data: [
+            {
+              type: "column",
+              name: "Amount",
+              color: "#33AA33",
+              showInLegend: true,
+              dataPoints: [
+                <% @table_data.each do |row| %>
+                  <% dateval = row[:date]; date = "new Date(#{dateval.year},#{dateval.month - 1},#{dateval.day})" %>
+                  { x: <%= date %>, y: <%= sprintf("%0.2f", row[:amount] || 0) %> },
+                <% end %>
+              ]
+            },
+            {
+              type: "spline",
+              name: "NAV",
+              color: "#222222",
+              markerBorderColor: "#222222",
+              markerColor: "#CCCCCC",
+              lineThickness: 2,
+              showInLegend: true,
+              axisYType: "secondary",                
+              dataPoints: [
+                <% @table_data.each do |row| %>
+                  <% dateval = row[:date]; date = "new Date(#{dateval.year},#{dateval.month - 1},#{dateval.day})" %>
+                  { x: <%= date %>, y: <%= sprintf("%0.2f", row[:nav] || 0) %> },
+                <% end %>
+              ]
+            },
+          ]
+        });
+        chart.render();
+      });
+    </script>
+    <div id="chart-container" style="height: 400px; width: 100%"></div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="span12">
+    <table class="table table-condensed table-striped table-bordered table-hever">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th><span class="pull-right">Start Shares</span></th>
+          <th><span class="pull-right">Net Dollars</th>
+          <th><span class="pull-right">Net Shares</span></th>
+          <th><span class="pull-right">End Shares</span></th>
+          <th><span class="pull-right">Amount</span></th>
+          <th><span class="pull-right">NAV</span></th>
+        </tr>
+      </thead>
+      <tbody>
+      <% @table_data.reverse.each do |row| %>
+        <tr>
+          <td><%= row[:date] %></td>
+          <td><span class="pull-right"><%= sprintf("%0.2f", row[:start_shares]) %></span></td>
+          <td><span class="pull-right"><%= sprintf("$%0.2f", row[:cost_in_out]) %></span></td>
+          <td><span class="pull-right"><%= sprintf("%0.2f", row[:shares_in_out]) %></span></td>
+          <td><span class="pull-right"><%= sprintf("%0.2f", row[:end_shares]) %></span></td>
+          <td><span class="pull-right"><%= sprintf("$%0.2f", row[:amount]) %></span></td>
+          <td><span class="pull-right"><%= sprintf("$%0.2f", row[:nav]) %></span></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+

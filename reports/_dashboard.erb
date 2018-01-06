@@ -1,0 +1,189 @@
+<% params[:month] = Date.new(Date.today.year, Date.today.month, 1) %>
+
+<% @last_bills = query do %>
+  select
+    account as "Account",
+    xtn_date as "Last Paid",
+    amount as "Amount"
+  from
+    ledger
+  where
+    (account, xtn_date) in (
+      select
+        account,
+        max(xtn_date) as xtn_date
+      from
+        ledger
+      where
+        account ~ 'Expenses:(Utils|Interest|Service)'
+        and account != 'Expenses:Utils:Water'
+        and account !~ ':Fees'
+      group by
+        account
+    )
+    and amount > 0
+  order by
+    account
+<% end %>
+
+<% @current_accounts = query do %>
+ with current_accounts as (select
+     account,
+     bank as bank,
+     virtual as real,
+     uncleared as uncleared
+ from (
+ select
+     account,
+     sum(amount) as virtual,
+     sum(case when cleared and not virtual then amount else 0 end) as bank,
+     sum(case when not cleared then amount else 0 end) as uncleared
+ from
+     ledger
+ where
+     account ~ '<%= Constants::CURRENT_ACCOUNTS %>'
+ group by
+     account
+ having
+     abs(sum(case when cleared and not virtual then amount else 0 end)) >= 1 
+ ) x
+ order by
+     account
+
+ )
+ select
+     account as "Account",
+     bank as "Bank",
+     real as "Real",
+     uncleared as "Uncleared"
+ from current_accounts
+ union all
+ select
+     'Total' as "Account",
+     sum(bank) as "Bank",
+     sum(real) as "Real",
+     sum(uncleared) as "Uncleared"
+ from current_accounts
+<% end %>
+
+<% @uncleared = query do %>
+ select
+     xtn_id as "Xtn",
+     xtn_date as "Date",
+     note as "Payee",
+     account as "Account",
+     amount as "Amount"
+ from
+     ledger
+ where
+     not cleared
+     and account ~ '<%= Constants::CURRENT_ACCOUNTS %>'
+ order by
+     xtn_date,
+     account,
+     note
+<% end %>
+
+<% @last_updated_report = query do %>
+select
+    max(updated_at at time zone 'UTC')
+from
+    update_history
+<% end %>
+<%
+def relative_time(start_time)
+  diff_seconds = Time.now.utc - start_time.utc
+  case diff_seconds
+  when 0 .. 59
+    return"#{diff_seconds.to_i} seconds ago"
+  when 60 .. (3600-1)
+    return "#{(diff_seconds/60).to_i} minutes ago"
+  when 3600 .. (3600*24-1)
+    return "#{(diff_seconds/3600).to_i} hours ago"
+  when (3600*24) .. (3600*24*30) 
+    return "#{(diff_seconds/(3600*24)).to_i} days ago"
+  else
+    return start_time.strftime("%m/%d/%Y")
+  end
+end
+@last_updated = relative_time(@last_updated_report.rows[0][0].value)
+%>
+
+<% @unbudgeted = query do %>
+  select
+    real_money - funds + liabilities
+  from (
+    select
+      sum(case when account ~ '(<%= Constants::CURRENT_ACCOUNTS %>)' then amount else 0 end) as real_money,
+      sum(case when account ~ '^Assets:Funds:' then amount else 0 end) as funds,
+      sum(case when account in ('Liabilities:Chase:SP', 'Liabilities:Payable') then amount else 0 end) as liabilities
+    from
+      ledger
+  ) x;
+<% end %>
+
+<!-- < @budget = BudgetSummaryReport.run(1) %> -->
+<!-- < @budget_remaining = (@budget.rows[0][3].value || 0) %> -->
+<!-- < @budget_color = @budget_remaining > 0 ? 'green' : 'red' %> -->
+<!-- < @unbudgeted_remaining = @unbudgeted.rows[0][0].value %> -->
+<!-- < @unbudgeted_color = @unbudgeted_remaining > 0 ? 'green' : 'red' %> -->
+<!-- < @budget_float = 1300 %> -->
+<!-- < @budget_total = @budget.rows[0][1].value + @budget_float %> -->
+
+<% @goals = query do %>
+select
+    goal as "Goal",
+    goal_amount as "Goal Amount",
+    spent_amount as "Amount",
+    goal_amount - spent_amount as "Left"
+from (
+        select
+        'Liabilities:Loans:Mazda' as goal,
+        0 as goal_amount,
+        (select abs(sum(amount)) from ledger where account = 'Liabilities:Loans:Mazda') as spent_amount
+        union all
+        select
+        'Assets:Funds:Medical' as goal,
+        3000.0 as goal_amount,
+        (select abs(sum(amount)) from ledger where account = 'Assets:Funds:Medical') as spent_amount
+    ) x
+<% end %>
+
+<div class="row">
+  <div class="span6">
+    <h3><a href="/reports/bills">Last Bills</a></h3>
+    <%= table(@last_bills) do |t|
+          t.decorate /Account/ => ExpensesDecorator.new(year: ->(c,r){r[1].value})
+          t.decorate /Last Paid/ => StyleDecorator.new(color: 'red'), :if => lambda { |c,r| c.value + 25 <= Date.today }
+        end
+    %>
+  </div>
+  <div class="span6">
+    <h3><a href="/reports/accounts">Current Accounts</a></h3>
+    <%= @current_accounts.error %>
+    <%= table(@current_accounts) do |t|
+          t.link /Account/ => '/reports/_register?account=:this&year=:now', :if => lambda{|c,r| c.value != "Total"}
+        end
+    %>
+  </div>
+</div>
+<div class="row">
+  <div class="span6">
+    <h3>Short Term Funds</h3>
+  </div>
+  <div class="span6">
+    <h3>Long Term Funds</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="span12">
+    <h3>Uncleared Transactions</h3>
+    <%= @uncleared.error %>
+    <%= table @uncleared do |t|
+          t.decorate /Xtn/ => LedgerWeb::Decorators::IconDecorator.new('chevron-right')
+          t.link /Xtn/ => "/reports/_register?xtn_id=:this&include_virtual=#{params[:include_virtual]}&cleared="
+          t.link /Payee/ => '/reports/_register?payee=:this&month=:now&cleared='
+          t.link /Account/ => '/reports/_register?account=:this&month=:now&cleared='
+        end %>
+  </div>
+</div>
