@@ -74,6 +74,14 @@ class App extends Component {
 	    }
 	});
     }
+    chooseLocationAddress = (location) => {
+	this.setState((prevState) => {
+	    return {
+		location: location,
+		view: 'form'
+	    }
+	});
+    }
 
     submitCaptureForm = () => {
 	if(!this.refs.form.checkValidity()) return;
@@ -184,7 +192,7 @@ class App extends Component {
 	} else if (this.state.view === "payeeList") {
 	    return <PayeeList payee={this.state.payee} onBack={this.viewForm} onSubmit={this.choosePayee} onSelect={this.chooseTransaction}/>;
 	} else if (this.state.view === "locationList") {
-	    return <LocationList location={this.state.location} onBack={this.viewForm} onSelect={this.chooseLocation}/>;
+	    return <LocationList location={this.state.location} onBack={this.viewForm} onSubmit={this.chooseLocationAddress} onSelect={this.chooseLocation}/>;
 	} else if (this.state.view === "accountList") {
 	    return <AccountList payee={this.state.payee} account={this.state.account} onBack={this.viewForm} onSelect={this.chooseAccount}/>;
 	} else if (this.state.view === "creditAccountList") {

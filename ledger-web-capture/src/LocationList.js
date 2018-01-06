@@ -110,9 +110,11 @@ class LocationList extends Component {
 	    <div className="react-capture">
 	      <header>
 		<button className="back" onClick={this.props.onBack}></button>
+		<button className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value); } }></button>
 		<div className="group">
 		  <input
 		    name="searchName"
+		    ref="search"
 		    type="search"
 		    defaultValue={this.props.location}
 		    placeholder="Search nearby ..."
