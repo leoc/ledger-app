@@ -3,5 +3,8 @@ import ReactDOM from 'react-dom';
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+import { HashRouter, withRouter } from 'react-router-dom';
+
+var AppWithRouter = withRouter(App)
+ReactDOM.render(<HashRouter><AppWithRouter /></HashRouter>, document.getElementById('root'));
 registerServiceWorker();

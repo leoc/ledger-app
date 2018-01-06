@@ -5,6 +5,8 @@ import LocationList from './LocationList';
 import AccountList from './AccountList';
 import './App.sass';
 
+import { Route, Switch } from 'react-router-dom';
+
 var api_headers = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
@@ -23,7 +25,6 @@ var currentDate = () => {
 
 class App extends Component {
     state = {
-	view: 'form',
 	date: currentDate(),
 	payee: '',
 	location: '',
@@ -53,16 +54,16 @@ class App extends Component {
 	this.setState({
 	    payee: transaction.payee,
 	    location: transaction.location || '',
-	    account: transaction.account,
-	    view: 'form'
+	    account: transaction.account
 	});
+	this.viewForm();
     }
 
     choosePayee = (payee) => {
 	this.setState({
-	    payee: payee,
-	    view: 'form'
+	    payee: payee
 	});
+	this.viewForm();
     }
 
     chooseLocation = (location) => {
@@ -70,27 +71,23 @@ class App extends Component {
 	    return {
 		payee: location.name,
 		location: location.vicinity,
-		account: prevState.account || this.guessAccountByLocation(location.types),
-		view: 'form'
-	    }
+		account: prevState.account || this.guessAccountByLocation(location.types)
+	    };
 	});
+	this.viewForm();
     }
     chooseLocationAddress = (location) => {
 	this.setState((prevState) => {
 	    return {
-		location: location,
-		view: 'form'
-	    }
+		location: location
+	    };
 	});
-    }
-
-    triggerFormSubmit = () => {
-	this.refs.form.submit();
+	this.viewForm();
     }
 
     submitCaptureForm = (event) => {
-	event.preventDefault()
-	if(!this.refs.form.checkValidity()) return;
+	event.preventDefault();
+	if(!this.form.checkValidity()) return;
 	fetch(
 	    "/transactions",
 	    {
@@ -112,35 +109,38 @@ class App extends Component {
     }
 
     chooseAccount = (account) => {
-	this.setState({ account: account, view: 'form' });
+	this.setState({ account: account });
+	this.viewForm();
     }
 
     chooseCreditAccount = (account) => {
-	this.setState({ creditAccount: account, view: 'form' });
+	this.setState({ creditAccount: account });
+	this.viewForm();
     }
 
     changeNote = (event) => {
-	this.setState({ note: event.target.value, view: 'form' });
+	this.setState({ note: event.target.value });
+	this.viewForm();
     }
 
     viewPayeeList = () => {
-	this.setState({ view: 'payeeList' });
+	this.props.history.push('/payeeList');
     }
 
     viewLocationList = () => {
-	this.setState({ view: 'locationList' });
+	this.props.history.push('/locationList');
     }
 
     viewAccountList = () => {
-	this.setState({ view: 'accountList' });
+	this.props.history.push('/accountList');
     }
 
     viewCreditAccountList = () => {
-	this.setState({ view: 'creditAccountList' });
+	this.props.history.push('/creditAccountList');
     }
 
     viewForm = () => {
-	this.setState({ view: "form" });
+	this.props.history.push('/');
     }
 
     setDate = (event) => {
@@ -156,65 +156,86 @@ class App extends Component {
     }
 
     render() {
-	const { view } = this.state || {};
-	if (view === "form") {
-	    return (
-		<div className="react-capture">
-		  <header>
-		    <button className="back" onClick={this.goToRoot}></button>
-		    <button className="submit right" onClick={this.submitCaptureForm}></button>
-		    <h2>Capture</h2>
-		  </header>
-		  <div className="content">
-		    <form ref="form" onSubmit={this.submitCaptureForm}>
-		      <div className="group">
-			<input type="date" name="date" placeholder=" " value={this.state.date} onChange={this.setDate} required={true} />
-			<span className="bar"></span>
-			<label>Date</label>
-		      </div>
-		      <div className="group">
-			<input type="text" name="payee" placeholder=" " value={this.state.payee} onClick={this.viewPayeeList} required={true} />
-			<span className="bar"></span>
-			<label>Payee</label>
-		      </div>
-		      <div className="group">
-			<input type="text" name="location" placeholder=" " value={this.state.location} onClick={this.viewLocationList} />
-			<label>Location</label>
-		      </div>
-		      <div className="group">
-			<input type="text" name="debit_account" placeholder=" " value={this.state.account} onClick={this.viewAccountList} required />
-			<label>Debit Account</label>
-		      </div>
-		      <div className="group">
-			<input type="text" name="credit_account" placeholder=" " value={this.state.creditAccount} onClick={this.viewCreditAccountList} required />
-			<label>Credit Account</label>
-		      </div>
-		      <div className="columns">
-			<CurrencyInput name="amount" value={this.state.amount} onChangeEvent={this.setAmount} required autoFocus />
-			<select name="commodity">
-			  <option>EUR</option>
-			  <option>USD</option>
-			</select>
-		      </div>
-		      <div className="group">
-			<input type="text" name="note" placeholder=" " value={this.state.note} onChange={this.changeNote} />
-			<label>Note</label>
-		      </div>
-		      <input type="submit" value="Capture Transaction" />
-		    </form>
-		  </div>
-		</div>
-	    );
-	} else if (this.state.view === "payeeList") {
-	    return <PayeeList payee={this.state.payee} onBack={this.viewForm} onSubmit={this.choosePayee} onSelect={this.chooseTransaction}/>;
-	} else if (this.state.view === "locationList") {
-	    return <LocationList location={this.state.location} onBack={this.viewForm} onSubmit={this.chooseLocationAddress} onSelect={this.chooseLocation}/>;
-	} else if (this.state.view === "accountList") {
-	    return <AccountList payee={this.state.payee} account={this.state.account} onBack={this.viewForm} onSelect={this.chooseAccount}/>;
-	} else if (this.state.view === "creditAccountList") {
-	    return <AccountList account={this.state.creditAccount} onBack={this.viewForm} onSelect={this.chooseCreditAccount}/>;
-	}
-	return "";
+	return (
+		<Switch>
+		<Route exact path="/" render={() => {
+		    return (
+			<div className="react-capture">
+			  <header>
+			    <button className="back" onClick={this.goToRoot}></button>
+			    <button className="submit right" onClick={this.submitCaptureForm}></button>
+			    <h2>Capture</h2>
+			  </header>
+			  <div className="content">
+			    <form ref={(form) => this.form = form} onSubmit={this.submitCaptureForm}>
+			      <div className="group">
+				<input type="date" name="date" placeholder=" " value={this.state.date} onChange={this.setDate} required={true} />
+				<span className="bar"></span>
+				<label>Date</label>
+			      </div>
+			      <div className="group">
+				<input type="text" name="payee" placeholder=" " value={this.state.payee} onClick={this.viewPayeeList} required={true} />
+				<span className="bar"></span>
+				<label>Payee</label>
+			      </div>
+			      <div className="group">
+				<input type="text" name="location" placeholder=" " value={this.state.location} onClick={this.viewLocationList} />
+				<label>Location</label>
+			      </div>
+			      <div className="group">
+				<input type="text" name="debit_account" placeholder=" " value={this.state.account} onClick={this.viewAccountList} required />
+				<label>Debit Account</label>
+			      </div>
+			      <div className="group">
+				<input type="text" name="credit_account" placeholder=" " value={this.state.creditAccount} onClick={this.viewCreditAccountList} required />
+				<label>Credit Account</label>
+			      </div>
+			      <div className="columns">
+				<CurrencyInput name="amount" value={this.state.amount} onChangeEvent={this.setAmount} required autoFocus />
+				<select name="commodity">
+				  <option>EUR</option>
+				  <option>USD</option>
+				</select>
+			      </div>
+			      <div className="group">
+				<input type="text" name="note" placeholder=" " value={this.state.note} onChange={this.changeNote} />
+				<label>Note</label>
+			      </div>
+			      <input type="submit" value="Capture Transaction" />
+			    </form>
+			  </div>
+			</div>
+		    );
+		}} />
+		<Route path="/payeeList" render={() => {
+		    return <PayeeList
+		    payee={this.state.payee}
+		    onBack={this.viewForm}
+		    onSubmit={this.choosePayee}
+		    onSelect={this.chooseTransaction} />;
+		}}/>
+		<Route path="/locationList" render={() => {
+		    return <LocationList
+		    location={this.state.location}
+		    onBack={this.viewForm}
+		    onSubmit={this.chooseLocationAddress}
+		    onSelect={this.chooseLocation}/>;
+		}}/>
+		<Route path="/accountList" render={() => {
+		    return <AccountList
+		    payee={this.state.payee}
+		    account={this.state.account}
+		    onBack={this.viewForm}
+		    onSelect={this.chooseAccount}/>;
+		}}/>
+		<Route path="/creditAccountList" render={() => {
+		    return <AccountList
+		    account={this.state.creditAccount}
+		    onBack={this.viewForm}
+		    onSelect={this.chooseCreditAccount}/>;
+		}}/>
+		</Switch>
+	);
     }
 }
 
