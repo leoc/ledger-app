@@ -22,24 +22,39 @@ class PayeeList extends Component {
 	}
     }
 
+    submitValue = (event) => {
+	event.preventDefault();
+	this.props.onSubmit(this.refs.search.value);
+    }
+
     render() {
 	return (
-		<div className="react-capture">
-		<header>
-		<button className="back" onClick={this.props.onBack}></button>
-		<button className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value) } }></button>
-		<div className="group">
-		<input ref="search" name="search" type="search" placeholder="Payee" defaultValue={this.props.payee} onChange={this.search} autoFocus autoComplete="off" />
+	    <div className="react-capture">
+	      <header>
+		<form onSubmit={this.submitValue}>
+		  <button className="back" type="button" onClick={this.props.onBack}></button>
+		  <button className="submit right" type="submit"></button>
+		  <div className="group">
+		    <input
+		      ref="search"
+		      name="search"
+		      type="search"
+		      placeholder="Payee"
+		      defaultValue={this.props.payee}
+		      onChange={this.search}
+		      autoFocus
+		      autoComplete="off" />
 		    <span className="bar"></span>
-		</div>
-		</header>
-		<div className="content">
+		  </div>
+		</form>
+	      </header>
+	      <div className="content">
 		<ul className="collection">
-		{this.state.list.map(item => <li key={item.payee} onClick={() => { console.log(this.props); this.props.onSelect(item) }}><span className="title">{item.payee}</span><p>{item.account}</p></li>)}
+		  {this.state.list.map(item => <li key={item.payee} onClick={() => { console.log(this.props); this.props.onSelect(item) }}><span className="title">{item.payee}</span><p>{item.account}</p></li>)}
 
-		</ul>
-    	        </div>
-		</div>
+	        </ul>
+    	      </div>
+	    </div>
 	);
     }
 }
