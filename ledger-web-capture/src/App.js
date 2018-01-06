@@ -28,6 +28,7 @@ class App extends Component {
 	payee: '',
 	location: '',
 	account: '',
+	creditAccount: 'Assets:Cash',
 	amount: ''
     }
 
@@ -89,6 +90,7 @@ class App extends Component {
 		    payee: '',
 		    location: '',
 		    account: '',
+		    creditAccount: 'Assets:Cash',
 		    amount: ''
 		});
 	    });
@@ -96,6 +98,10 @@ class App extends Component {
 
     chooseAccount = (account) => {
 	this.setState({ account: account, view: 'form' });
+    }
+
+    chooseCreditAccount = (account) => {
+	this.setState({ creditAccount: account, view: 'form' });
     }
 
     viewPayeeList = () => {
@@ -108,6 +114,10 @@ class App extends Component {
 
     viewAccountList = () => {
 	this.setState({ view: 'accountList' });
+    }
+
+    viewCreditAccountList = () => {
+	this.setState({ view: 'creditAccountList' });
     }
 
     viewForm = () => {
@@ -157,7 +167,7 @@ class App extends Component {
 			<label>Debit Account</label>
 		      </div>
 		      <div className="group">
-			<input type="text" name="credit_account" placeholder="" defaultValue={"Assets:Cash"} required />
+			<input type="text" name="credit_account" placeholder="" defaultValue={this.state.creditAccount} onClick={this.viewCreditAccountList} required />
 			<label>Credit Account</label>
 		      </div>
 		      <div className="columns">
@@ -177,6 +187,8 @@ class App extends Component {
 	    return <LocationList onBack={this.viewForm} onSelect={this.chooseLocation}/>;
 	} else if (this.state.view === "accountList") {
 	    return <AccountList payee={this.state.payee} onBack={this.viewForm} onSelect={this.chooseAccount}/>;
+	} else if (this.state.view === "creditAccountList") {
+	    return <AccountList onBack={this.viewForm} onSelect={this.chooseCreditAccount}/>;
 	}
 	return "";
     }
