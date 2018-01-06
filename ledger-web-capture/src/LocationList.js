@@ -36,6 +36,7 @@ class LocationList extends Component {
     }
 
     getNearbyLocations = () => {
+	this.setState({ isLoading: true });
 	this.getCurrentLocation({ enableHighAccuracy: true })
 	    .then(({ coords }) => {
 		this.setState({ coords: { lat: coords.latitude, lng: coords.longitude} });
@@ -45,12 +46,14 @@ class LocationList extends Component {
 	    .then((json) => {
 	    	this.setState({
 	    	    nextPageToken: json.next_page_token,
-	    	    list: json.results
+	    	    list: json.results,
+		    isLoading: false
 	    	});
 	    });
     }
 
     searchLocations = (name) => {
+	this.setState({ isLoading: true });
 	this.getCurrentLocation({ enableHighAccuracy: true })
 	    .then(({ coords }) => {
 		this.setState({ coords: { lat: coords.latitude, lng: coords.longitude} });
@@ -62,7 +65,8 @@ class LocationList extends Component {
 	    .then((json) => {
 		this.setState({
 		    nextPageToken: json.next_page_token,
-		    list: json.results
+		    list: json.results,
+		    isLoading: false
 		});
 	    });
     }
@@ -134,7 +138,11 @@ class LocationList extends Component {
 		</div>
 		</form>
 	      </header>
-	      <div className="content">
+	      <div className={(this.state.isLoading) ? "content loading" : "content"}>
+		<div className="loading-layer">
+		  <div className="loader"></div>
+		  Searching ...
+		</div>
 		<ul className="collection">
 		  {this.state.list.map(item => { return <li key={item.name} onClick={() => { this.props.onSelect(item); }}> <span className="distance">{this.distance(item)} km</span> <span className="title">{item.name}</span> <p>{item.vicinity}</p> </li>;})}
 		  {this.state.nextPageToken && (<li className="load-more"><a onClick={this.loadMore}>Load more ...</a></li>)}
