@@ -29,7 +29,7 @@ class PayeeList extends Component {
 		<button className="back" onClick={this.props.onBack}></button>
 		<button className="submit right" onClick={() => { this.props.onSubmit(this.refs.search.value) } }></button>
 		<div className="group">
-		<input ref="search" name="search" type="search" placeholder="Payee" defaultValue={this.props.payee} onChange={this.search} autoFocus autocomplete="off" />
+		<input ref="search" name="search" type="search" placeholder="Payee" defaultValue={this.props.payee} onChange={this.search} autoFocus autoComplete="off" />
 		    <span className="bar"></span>
 		</div>
 		</header>
