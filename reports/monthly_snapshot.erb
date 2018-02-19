@@ -216,7 +216,6 @@ from
       )
       and tags !~ 'skipunbudget: true'
       and <%= @date_clause %>
-      and account !~ '^(Expenses:Taxes|Expenses:Insurance:Medical)'
       and xtn_id not in (select distinct xtn_id from ledger where account ~ 'Assets:Funds' and <%= @date_clause %>)
     group by
       account
