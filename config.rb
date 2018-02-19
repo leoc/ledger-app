@@ -14,6 +14,8 @@ LedgerWeb::Config.new do |config|
   config.set :files_seen, {}
   config.set :file_count, 0
   config.add_hook :before_insert_row do |row|
+    row[:filename] = config.get(:last_file) if row[:filename] =~ /\/budget.ledger$/
+
     filename = row[:filename]
     unless config.get(:files_seen)[filename]
       count = config.get(:file_count)
@@ -67,6 +69,10 @@ LedgerWeb::Config.new do |config|
 
     row
 
+  end
+
+  config.add_hook :after_insert_row do |row|
+    config.set(:last_file, row[:filename])
   end
 
   config.add_hook :before_load do |db|
