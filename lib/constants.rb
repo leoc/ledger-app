@@ -1,5 +1,5 @@
 module Constants
-  CURRENT_ACCOUNTS = 'Assets:(Cash|DKB|PayPal)'
+  CURRENT_ACCOUNTS = 'Assets:(Cash|Fidor|DKB|PayPal)'
   LONG_TERM_FUNDS  =
     'Assets:Funds:(Emergency|Travel|Legal|Living:Household|Auto|Bike|Education|Entertainment|Medical|Clothes|Gifts|Investable)'
   LONG_TERM_LIABILITIES = 'Liabilities:(Loans)'
