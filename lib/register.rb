@@ -80,9 +80,8 @@ class RegisterReport < LedgerWeb::Report
 
   def self.decorate(table)
     table.hide /Cleared/
-
     table.decorate :all => LedgerWeb::Decorators::HighlightDecorator.new('#d9edf7'), :if => lambda{|c,r| !r[5].value }
-    table.decorate /Xtn/ => LedgerWeb::Decorators::IconDecorator.new('chevron-right')
+    table.decorate /Xtn/ => LedgerWeb::Decorators::IconDecorator.new('fa fa fa-chevron-right')
     table.decorate /Receipt/ => LedgerWeb::Decorators::IconDecorator.new('list-alt'), :if => ->(c,r) { !c.value.nil? }
 
     table.link /Account/ => "/reports/_register?account=:this&include_virtual=#{params[:include_virtual]}&year=#{params[:year]}&month=#{params[:month]}&cleared=#{params[:cleared]}}"
