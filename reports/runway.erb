@@ -3,220 +3,230 @@
 <% @emily_weekly = params[:emily_weekly] || 0 %>
 <% @unbudget = params[:unbudget] || 200 %>
 <%
-  @start_date = params[:start_date].nil? ? Date.today << 3 : Date.parse(params[:start_date])
-  @start_date -= 1 until @start_date.wday == 1
-  @num_weeks = (params[:num_weeks] || 65).to_i
-  @additional_start = (params[:additional_start] || 0).to_i
+@start_date = params[:start_date].nil? ? Date.today << 3 : Date.parse(params[:start_date])
+@start_date -= 1 until @start_date.wday == 1
+@num_weeks = (params[:num_weeks] || 65).to_i
+@additional_start = (params[:additional_start] || 0).to_i
 
-  cash_cases = [@okapi_weekly, @emily_weekly, "(case when row_number = 1 then #{@additional_start} else 0 end)"]
+cash_cases = [@okapi_weekly, @emily_weekly, "(case when row_number = 1 then #{@additional_start} else 0 end)"]
 
-  params.keys.select { |k| k.to_s =~ /cash_amount_(\d+)/ }.each do |key|
-    amount = params[key].to_i
-    n = /cash_amount_(\d+)/.match(key.to_s)[1]
-    start_key = "cash_start_#{n}".to_sym
-    end_key = "cash_end_#{n}".to_sym
-    week_key = "cash_week_#{n}".to_sym
-    cash_start = params[start_key].nil? ? @start_date : Date.parse(params[start_key])
-    cash_end = params[end_key].nil? ? @start_date + (@num_weeks * 7) : Date.parse(params[end_key])    
-    cash_week = params[week_key].nil? ? '' : "and week_num = #{params[week_key].to_i}"
+params.keys.select { |k| k.to_s =~ /cash_amount_(\d+)/ }.each do |key|
+amount = params[key].to_i
+n = /cash_amount_(\d+)/.match(key.to_s)[1]
+start_key = "cash_start_#{n}".to_sym
+end_key = "cash_end_#{n}".to_sym
+week_key = "cash_week_#{n}".to_sym
+cash_start = params[start_key].nil? ? @start_date : Date.parse(params[start_key])
+cash_end = params[end_key].nil? ? @start_date + (@num_weeks * 7) : Date.parse(params[end_key])    
+cash_week = params[week_key].nil? ? '' : "and week_num = #{params[week_key].to_i}"
 
-    cash_cases << "(case when week between '#{cash_start}' and '#{cash_end}' #{cash_week} then #{amount} else 0 end)"
-  end
+cash_cases << "(case when week between '#{cash_start}' and '#{cash_end}' #{cash_week} then #{amount} else 0 end)"
+end
 
-  @cash_cases = cash_cases.join(" + ")
-  puts @cash_cases
+@cash_cases = cash_cases.join(" + ")
 %>
 
 
 <% @fund_balance = query do %>
-  select sum(amount) from ledger where account ~ 'Assets:Funds' and account !~ 'Assets:Funds:(Emergency|Reserve)'
+    select sum(amount) from ledger where account ~ 'Assets:Funds' and account !~ 'Assets:Funds:(Emergency|Reserve)'
 <% end %>
 
 <% @burn_down = query do %>
-with weeks as (
- select
-   x,
-   '<%= @start_date %>'::date + (x || ' weeks')::interval as xtn_date
-  from
+    with weeks as (
+    select
+    x,
+    '<%= @start_date %>'::date + (x || ' weeks')::interval as xtn_date
+    from
     generate_series(0,<%= @num_weeks %>) x
-),
-assets as (
-  select
+    ),
+    assets as (
+    select
     xtn_date,
     xtn_week,
     amount
-  from
+    from
     ledger
-  where
+    where
     account ~ '<%= Constants::CURRENT_ACCOUNTS %>'
-  order by
+    order by
     xtn_date,
     amount
-)
-select
-  weeks.xtn_date::date as "Week",
-  (select sum(amount) from assets where xtn_date < weeks.xtn_date) as "Starting",
-  coalesce((select sum(case when amount > 0 then amount else 0 end) from assets where xtn_date between weeks.xtn_date and weeks.xtn_date + '6 days'::interval), 0) as "Cash In",
-  coalesce((select sum(case when amount < 0 then amount else 0 end) from assets where xtn_date between weeks.xtn_date and weeks.xtn_date + '6 days'::interval), 0) as "Cash Out",
-  (select sum(amount) from assets where xtn_date <= weeks.xtn_date + '6 days'::interval) as "Ending"
-from
-  weeks
-where
-  xtn_date + '1 week'::interval <= date_trunc('week', now()::date) + '1 week'::interval
-union all
-select
-  week,
-  coalesce(lag(ending, 1) over (rows unbounded preceding) + (select sum(amount) from assets), (select sum(amount) from assets)) as starting,
-  coalesce(cash_in, 0),
-  coalesce(cash_out, 0),
-  ending + (select sum(amount) from assets)
-from (
-  select
-     week,
-     <%= @cash_cases %> as cash_in,
-     cash_out,
-     sum(cash_out + <%= @cash_cases %>) over (rows unbounded preceding) as ending
-  from (
+    )
     select
-      week,
-      week_num,
-      row_number() over (rows unbounded preceding) as row_number,
-      -1 * coalesce((select sum(amount) from budget_periods b where b.week = week_num and (x.week between from_date and to_date or (x.week >= from_date and to_date is null))), 0) - <%= @unbudget %> as cash_out
+    weeks.xtn_date::date as "Week",
+    (select sum(amount) from assets where xtn_date < weeks.xtn_date) as "Starting",
+    coalesce((select sum(case when amount > 0 then amount else 0 end) from assets where xtn_date between weeks.xtn_date and weeks.xtn_date + '6 days'::interval), 0) as "Cash In",
+    coalesce((select sum(case when amount < 0 then amount else 0 end) from assets where xtn_date between weeks.xtn_date and weeks.xtn_date + '6 days'::interval), 0) as "Cash Out",
+    (select sum(amount) from assets where xtn_date <= weeks.xtn_date + '6 days'::interval) as "Ending"
+    from
+    weeks
+    where
+    xtn_date + '1 week'::interval <= date_trunc('week', now()::date) + '1 week'::interval
+    union all
+    select
+    week,
+    coalesce(lag(ending, 1) over (rows unbounded preceding) + (select sum(amount) from assets), (select sum(amount) from assets)) as starting,
+    coalesce(cash_in, 0),
+    coalesce(cash_out, 0),
+    ending + (select sum(amount) from assets)
     from (
-      select
-        week,
-        row_number() over (partition by date_trunc('month', week) order by week) as week_num
-      from (
-        select
-          ('<%= @start_date %>'::date + (x || ' weeks')::interval)::date as week
-        from
-          generate_series(0,<%= @num_weeks %>) x
-      ) x
+    select
+    week,
+    <%= @cash_cases %> as cash_in,
+    cash_out,
+    sum(cash_out + <%= @cash_cases %>) over (rows unbounded preceding) as ending
+    from (
+    select
+    week,
+    week_num,
+    row_number() over (rows unbounded preceding) as row_number,
+    -1 * coalesce((select sum(amount) from budget_periods b where b.week = week_num and (x.week between from_date and to_date or (x.week >= from_date and to_date is null))), 0) - <%= @unbudget %> as cash_out
+    from (
+    select
+    week,
+    row_number() over (partition by date_trunc('month', week) order by week) as week_num
+    from (
+    select
+    ('<%= @start_date %>'::date + (x || ' weeks')::interval)::date as week
+    from
+    generate_series(0,<%= @num_weeks %>) x
+    ) x
     ) x
     where                                    
-      week > date_trunc('week', now()::date)
-  ) x
-) x
+    week > date_trunc('week', now()::date)
+    ) x
+    ) x
 <% end %>
 <% p @burn_down.error %>
 
 <%
-  @end_date_row = @burn_down.rows.detect { |r| r[-1].value < 0 } || @burn_down.rows[-1]
-  @end_date = @end_date_row[0]
-  @week_count = @burn_down.rows.select { |r| r[-1].value > 0 && r[0].value > Date.today }.length
-  @month_count = @week_count / 4.0
+@end_date_row = @burn_down.rows.detect { |r| r[-1].value < 0 } || @burn_down.rows[-1]
+@end_date = @end_date_row[0]
+@week_count = @burn_down.rows.select { |r| r[-1].value > 0 && r[0].value > Date.today }.length
+@month_count = @week_count / 4.0
 
-  @efund_end_date_row = @burn_down.rows.detect { |r| r[-1].value < @fund_balance.rows[0][0].value && r[0].value > Date.today } || @burn_down.rows[-1]
-  @efund_end_date = @efund_end_date_row[0]
-  @efund_week_count = @burn_down.rows.select { |r| r[-1].value > @fund_balance.rows[0][0].value && r[0].value > Date.today }.length
-  @efund_month_count = @efund_week_count / 4.0
+@efund_end_date_row = @burn_down.rows.detect { |r| r[-1].value < @fund_balance.rows[0][0].value && r[0].value > Date.today } || @burn_down.rows[-1]
+@efund_end_date = @efund_end_date_row[0]
+@efund_week_count = @burn_down.rows.select { |r| r[-1].value > @fund_balance.rows[0][0].value && r[0].value > Date.today }.length
+@efund_month_count = @efund_week_count / 4.0
 %>
-<div class="page-header">
-  <h1>Runway <small><%= @efund_end_date.value %> (<%= @efund_week_count %> weeks, <%= @efund_month_count %> months)</small></h1>
-</div>
-<div class="row no-pdf">
-  <div class="col-md-12">
-    <form class="form form-inline">
-      <label for="emily_weekly">Emily Weekly</label>
-      <input class="form-control" type="text" id="emily_monthly" name="emily_weekly" value="<%= @emily_weekly %>">
-      <label for="okapi_weekly">Okapi Weekly</label>
-      <input class="form-control" type="text" id="okapi_weekly" name="okapi_weekly" value="<%= @okapi_weekly %>">
-      <label for="unbudget">Unbudget</label>
-      <input class="form-control" type="text" id="unbudget" name="unbudget" value="<%= @unbudget %>">
-      <input class="form-control" type="submit">
-    </form>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-    <p>This shows actual cash in and cash out of current accounts up to and including the current week (highlighted in blue). After the current week, expenses are projected from the budget, plus an extra $<%= @unbudget %> per week unbudget. Assumes a fixed $<%= @okapi_weekly %>/week income from Okapi revenue (which in turn assumes $<%= @okapi_weekly.to_i * 8 %>/mo Okapi gross revenue). Also assumes $<%= @emily_weekly %>/week from Emily. Weeks highlighted in green are depleting non-reserve savings funds.</p>
-    <p>Total cash exhaustion (red rows): <strong><%= @end_date.value %> (<%= @week_count %> weeks, <%= @month_count %> months)</strong></p>
-  </div>
-</div>
-<div class="row no-pdf">
-  <div class="col-md-12" style="height: 500px">
-    <script type="text/javascript">
-      $(function() {
-        var chart = new CanvasJS.Chart('chart-container',
-        {
-          title: {
-            text: "Runway",
-            fontSize: 30
-          },
-          axisX:{
-            gridColor: "Silver",
-            tickColor: "silver",
-            valueFormatString: "YYYY/MM/DD"
-          }, 
-          data: [
-            {
-              type: 'line',
-              showInLegend: true,
-              lineThickness: 2,
-              name: 'Amount',
-              dataPoints: [
-              <% @burn_down.rows.each do |row| %>
-                <% @date = row[0].value; @val = sprintf("%0.2f", row[-1].value) %>
-                { x: new Date(<%= @date.year %>,<%= @date.month - 1%>,<%= @date.day %>), y: <%= @val%> },
-              <% end %>
-              ]
-            },
-            {
-              type: 'line',
-              showInLegend: false,
-              lineThickness: 2,
-              color: 'green',
-              dataPoints: [
-                <% @date = @efund_end_date.value %>
-                <% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
-              ],
-            },
-            {
-              type: 'line',
-              showInLegend: false,
-              lineThickness: 2,
-              color: 'blue',
-              dataPoints: [
-                <% @date = Date.today %>
-                <% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
-              ],
-            },
-            {
-              type: 'line',
-              showInLegend: false,
-              lineThickness: 2,
-              color: 'red',
-              dataPoints: [
-                <% @date = @end_date.value %>
-                <% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
-                { x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
-              ],
-            }
-          ]
-        });
-        chart.render();
-      });
-    </script>
-    <div id="chart-container" style="height: 400px: width: 100%"></div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-    <%= @burn_down.error %>
-    <%= table @burn_down do |t|
-      today = Date.today
-      t.decorate /.*/ => StyleDecorator.new('background-color' => 'lightblue'), :if => ->(c,r){today = Date.today; start = r[0].value; endt = r[0].value + 7; today >= start && today < endt }
-      t.decorate /.*/ => StyleDecorator.new('background-color' => '#ccffcc'), :if => ->(c,r){r[-1].value <= @fund_balance.rows[0][0].value && r[0].value + 7 > today}
-      t.decorate /.*/ => StyleDecorator.new('background-color' => '#ffcccc'), :if => ->(c,r){r[-1].value <= 0 && r[0].value + 7 > today}
-      t.link /Week/ => "/reports/_register?week=:this&account=(#{ Constants::CURRENT_ACCOUNTS})&cleared="
-    end %>
-  </div>
-</div>
+
+<section class="content-header">
+    <h1>Runway <small><%= @efund_end_date.value %> (<%= @efund_week_count %> weeks, <%= @efund_month_count %> months)</h1>
+</section>
+<section class="content">
+    <div class="row no-pdf">
+	<div class="col-md-12">
+	    <div class="box">
+		<div class="box-body">
+		    <form class="form form-inline">
+			<label for="emily_weekly">Emily Weekly</label>
+			<input class="form-control" type="text" id="emily_monthly" name="emily_weekly" value="<%= @emily_weekly %>">
+			<label for="okapi_weekly">Okapi Weekly</label>
+			<input class="form-control" type="text" id="okapi_weekly" name="okapi_weekly" value="<%= @okapi_weekly %>">
+			<label for="unbudget">Unbudget</label>
+			<input class="form-control" type="text" id="unbudget" name="unbudget" value="<%= @unbudget %>">
+			<input class="form-control" type="submit">
+		    </form>
+		    <p>This shows actual cash in and cash out of current accounts up to and including the current week (highlighted in blue). After the current week, expenses are projected from the budget, plus an extra $<%= @unbudget %> per week unbudget. Assumes a fixed $<%= @okapi_weekly %>/week income from Okapi revenue (which in turn assumes $<%= @okapi_weekly.to_i * 8 %>/mo Okapi gross revenue). Also assumes $<%= @emily_weekly %>/week from Emily. Weeks highlighted in green are depleting non-reserve savings funds.</p>
+		    <p>Total cash exhaustion (red rows): <strong><%= @end_date.value %> (<%= @week_count %> weeks, <%= @month_count %> months)</strong></p>
+		</div>
+	    </div>
+	</div>
+    </div>
+    <div class="row no-pdf">
+	<div class="col-md-12" style="height: 500px">
+	    <div class="box">
+		<div class="box-body">
+		    <script type="text/javascript">
+		     $(function() {
+			 var chart = new CanvasJS.Chart('chart-container',
+							{
+							    title: {
+								text: "Runway",
+								fontSize: 30
+							    },
+							    axisX:{
+								gridColor: "Silver",
+								tickColor: "silver",
+								valueFormatString: "YYYY/MM/DD"
+							    }, 
+							    data: [
+								{
+								    type: 'line',
+								    showInLegend: true,
+								    lineThickness: 2,
+								    name: 'Amount',
+								    dataPoints: [
+									<% @burn_down.rows.each do |row| %>
+									<% @date = row[0].value; @val = sprintf("%0.2f", row[-1].value) %>
+									{ x: new Date(<%= @date.year %>,<%= @date.month - 1%>,<%= @date.day %>), y: <%= @val%> },
+									<% end %>
+								    ]
+								},
+								{
+								    type: 'line',
+								    showInLegend: false,
+								    lineThickness: 2,
+								    color: 'green',
+								    dataPoints: [
+									<% @date = @efund_end_date.value %>
+									<% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
+								    ],
+								},
+								{
+								    type: 'line',
+								    showInLegend: false,
+								    lineThickness: 2,
+								    color: 'blue',
+								    dataPoints: [
+									<% @date = Date.today %>
+									<% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
+								    ],
+								},
+								{
+								    type: 'line',
+								    showInLegend: false,
+								    lineThickness: 2,
+								    color: 'red',
+								    dataPoints: [
+									<% @date = @end_date.value %>
+									<% @min = @burn_down.rows.min_by { |r| r[-1].value }[-1].value ; @max = @burn_down.rows.max_by { |r| r[-1].value }[-1].value; %>
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @min %> },
+									{ x: new Date(<%= @date.year %>, <%= @date.month - 1 %>, <%= @date.day %>), y: <%= @max %> }
+								    ],
+								}
+							    ]
+							});
+			 chart.render();
+		     });
+		    </script>
+		    <div id="chart-container" style="height: 400px: width: 100%"></div>
+		</div>
+	    </div>
+	</div>
+    </div>
+    <div class="row">
+	<div class="col-md-12">
+	    <div class="box">
+		<div class="box-body">
+		    <%= @burn_down.error %>
+		    <%= table @burn_down do |t|
+		    today = Date.today
+		    t.decorate /.*/ => StyleDecorator.new('background-color' => 'lightblue'), :if => ->(c,r){today = Date.today; start = r[0].value; endt = r[0].value + 7; today >= start && today < endt }
+		    t.decorate /.*/ => StyleDecorator.new('background-color' => '#ccffcc'), :if => ->(c,r){r[-1].value <= @fund_balance.rows[0][0].value && r[0].value + 7 > today}
+		    t.decorate /.*/ => StyleDecorator.new('background-color' => '#ffcccc'), :if => ->(c,r){r[-1].value <= 0 && r[0].value + 7 > today}
+		    t.link /Week/ => "/reports/_register?week=:this&account=(#{ Constants::CURRENT_ACCOUNTS})&cleared="
+		    end %>
+		</div>
+	    </div>
+	</div>
+    </div>
+</section>
 
 <style type="text/css">
 @media print {
