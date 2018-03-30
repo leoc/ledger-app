@@ -1,11 +1,6 @@
 class CashFlowReport < LedgerWeb::Report
-  def self.run(opts={})
-    now = Date.today
-    force_now = opts[:force_now]
-    month = (force_now || params[:month].to_s == "") ? Date.new(now.year, now.month, 1) : params[:month]
-    year = (force_now || params[:year].to_s == "") ? Date.new(now.year, 1, 1) : params[:year]
-    date_eq = (force_now || params[:year].to_s == "") ? "xtn_month = '#{month}'" : "xtn_year = '#{year}'"
-
+  def self.run(timespan: 'month', date: Date.today.strftime('%Y-%m-01'))
+    date_eq = "xtn_#{timespan} = '#{date}'"
     query = """
       with months as (
         select
