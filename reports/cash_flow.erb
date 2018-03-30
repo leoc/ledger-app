@@ -1,46 +1,176 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.bundle.min.js"></script>
+
 <%
-  now = Date.today;
-  @month = params[:month].to_s == "" ? Date.new(now.year, now.month, 1) : params[:month]
-  @year = params[:year].to_s == "" ? Date.new(now.year, 1, 1) : params[:year]
+filter = params[:filter] || "year,#{Date.today.strftime('%Y-01-01')}"
+timespan, date_str = filter.split(',')
+@selected_date = Date.parse(date_str)
+@trunc_to = timespan
+if timespan == 'year'
+    @date_column = 'xtn_year'
+end
+@date_clause = "#{@date_column} = '#{@selected_date}'"
 %>
 
+<script>
+    $(document).ready(function() {
+        $('#date-filter').on('change', function(e) {
+             window.location = ''+window.location.pathname+'?filter='+$(e.target).val();
+        });
+    });
+</script>
+
 <% @months = query do %>
-  select xtn_month from ledger group by xtn_month order by xtn_month desc
+    select xtn_month from ledger group by xtn_month order by xtn_month desc
 <% end %>
 
 <% @years = query do %>
-  select xtn_year from ledger group by xtn_year order by xtn_year desc
+    select xtn_year from ledger group by xtn_year order by xtn_year desc
 <% end %>
 
-<% @disbursable = CashFlowReport.run %>
+<%
+@disbursable = CashFlowReport.run(
+    timespan: @trunc_to,
+    date: @selected_date
+)
+%>
 
-<div class="page-header">
-  <h1>Cash Flow for <%= params[:year].to_s == "" ? @month : @year %></h1>
-</div>
-<div class="row no-pdf">
-  <div class="span12">
-    <form class="form form-inline">    
-      <select name="month" class="input-small">
-        <% @selected_month = params[:month].to_s == "" ? nil : Date.parse(params[:month]) %>
-        <option value="">Month</option>
-        <% @months.each do |row| %>
-          <option value="<%= row[0].value %>" <%= (@selected_month == row[0].value) ? "selected" : "" %>><%= row[0].value %></option>
-        <% end %>
-      </select>
-      <select name="year" class="input-small">
-        <% @selected_year = params[:year].to_s == "" ? nil : Date.parse(params[:year]) %>
-        <option value="">Year</option>
-        <% @years.each do |row| %>
-          <option value="<%= row[0].value %>" <%= (@selected_year == row[0].value) ? "selected" : "" %>><%= row[0].value %></option>
-        <% end %>
-      </select>
-      <input type="submit" value="Update" class="btn">
-    </form>
-  </div>
-</div>
-<div class="row">
-  <div class="span12">
-    <%= @disbursable.error %>
-    <%= table @disbursable %>
-  </div>
-</div>  
+<section class="content-header">
+    <select id="date-filter" name="timeframe" class="form-control pull-right" style="max-width: 300px;">
+	<optgroup label="Years">
+	    <% @years.each do |row| %>
+		<option value="year,<%= row[0].value %>" <%= (@selected_date == row[0].value && @trunc_to == 'year') ? "selected" : "" %>><%= row[0].value %></option>
+	    <% end %>
+	</optgroup>
+	<optgroup label="Months">
+	    <% @months.each do |row| %>
+		<option value="month,<%= row[0].value %>" <%= (@selected_date == row[0].value && @trunc_to == 'month') ? "selected" : "" %>><%= row[0].value %></option>
+	    <% end %>
+	</optgroup>
+    </select>
+    <h1>Cash Flow for <%= @trunc_to %></h1>    
+</section>
+<section class="content">
+    <% @query = query do %>
+	with months as (
+        select
+        x,
+        xtn_date,
+        date_trunc('year', xtn_date) as xtn_year
+        from (
+        select
+        x,
+        (select min(xtn_month) from ledger where account ~ '<%= Constants::CURRENT_ACCOUNTS %>') + (x || ' months')::interval as xtn_date
+        from
+        generate_series(0,120) x
+        ) x
+	),
+	assets as (
+        select
+        xtn_date,
+        xtn_month,
+        xtn_year,
+        amount
+        from
+        ledger
+        where
+        account ~ '<%= Constants::CURRENT_ACCOUNTS %>'
+        order by
+        xtn_date,
+        amount
+	)
+	select
+        xtn_month as "Month",
+        starting as "Starting",
+        cash_in as "Cash In",
+        cash_out as "Cash Out",
+        cash_in + cash_out as "Net",
+        ending as "Ending",
+        fund_balance as "Fund Balance",
+        ending - fund_balance as "Available Cash"
+	from (
+        select
+        months.xtn_date::date as xtn_month,
+        months.xtn_year::date as xtn_year,
+        coalesce((select sum(amount) from assets where xtn_date < months.xtn_date),0) as starting,
+        coalesce((select sum(case when amount > 0 then amount else 0 end) from assets where xtn_date between months.xtn_date and (months.xtn_date + '1 month'::interval) - '1 day'::interval), 0) as cash_in,
+        coalesce((select sum(case when amount < 0 then amount else 0 end) from assets where xtn_date between months.xtn_date and (months.xtn_date + '1 month'::interval) - '1 day'::interval), 0) as cash_out,
+        coalesce((select sum(amount) from assets where xtn_date <= (months.xtn_date + '1 month'::interval) - '1 day'::interval), 0) as ending,
+        coalesce((select sum(amount) from ledger where account ~ 'Assets:Funds' and ledger.xtn_month <= months.xtn_date),0) as fund_balance
+        from
+        months
+        where
+        xtn_date + '1 month'::interval <= date_trunc('month', now()::date) + '1 month'::interval
+	) x
+	where <%= @date_clause %>
+    <% end %>
+    
+    <div class="box">
+	<div class="box-body">
+	    <canvas id="myChart" width="400" height="100"></canvas>
+	</div>
+    </div>
+    <div class="box">
+	<div class="box-body">
+	    <%= @disbursable.error %>
+	    <%= table @disbursable %>
+	</div>
+    </div>
+</section>
+
+<%
+chart_data = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [
+	{
+	    type: 'line',
+	    label: 'Net Worth',
+	    borderColor: "#ff0000",
+	    borderWidth: 2,
+	    pointBackgroundColor: '#ff0000',
+	    fill: false,
+	    lineTension: 0, 
+	    data: @query.rows.map{ |a| a[5].value.to_i }
+	}, {
+	    type: 'line',
+	    label: 'Fund Balance',
+	    borderColor: "#008800",
+	    borderWidth: 2,
+	    fill: false,
+	    pointBackgroundColor: '#008800',
+	    lineTension: 0, 
+	    data: @query.rows.map{ |a| a[6].value.to_i }
+	}, {
+	    type: 'bar',
+	    label: 'In',
+	    backgroundColor: '#008800',
+	    data: @query.rows.map{ |a| a[2].value.to_i },
+	    borderColor: 'white',
+	    borderWidth: 2
+	}, {
+	    type: 'bar',
+	    label: 'Out',
+	    backgroundColor: '#880000',
+	    data: @query.rows.map{ |a| -1 * a[3].value.to_i },
+	    borderColor: 'white',
+	    borderWidth: 2,
+	    width: 5
+	}
+    ]
+}
+%>
+<script>
+ var ctx = document.getElementById("myChart").getContext('2d');
+ var myChart = new Chart(ctx, {
+     type: 'bar',
+     data: <%= chart_data.to_json %>,
+     options: {
+         scales: {
+	     yAxes: [{
+                 ticks: {
+		     beginAtZero:true
+                 }
+	     }]
+         }
+     }
+ });
+</script>
