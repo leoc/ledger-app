@@ -9,7 +9,14 @@
 }
 
 body {
-  margin-top: 60px;
+}
+
+.content-wrapper {
+  padding-top: 50px;
+}
+
+aside.main-sidebar {
+  position: fixed;
 }
 
 nav a.capture.button {
@@ -24,4 +31,8 @@ nav a.capture.button {
 }
 nav a.capture.button:hover {
   text-decoration: none;
+}
+
+.main-header .navbar {
+  margin-left: 0 !important;
 }

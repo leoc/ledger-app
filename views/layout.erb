@@ -1,20 +1,20 @@
 <% @pdf_url = request.url.gsub('/reports/', '/pdf/') %>
 
 <% @taxable_investments = query do %>
-  select
+    select
     sum(amount)
-  from (
+    from (
     select 
-      commodity,
-      sum(amount) * case when commodity = '$' then 1 else (select price from prices where prices.commodity = ledger.commodity order by price_date desc limit 1) end as amount
+    commodity,
+    sum(amount) * case when commodity = '$' then 1 else (select price from prices where prices.commodity = ledger.commodity order by price_date desc limit 1) end as amount
     from
-      ledger
+    ledger
     where
-      account ~ 'Assets:Investments:Taxable'
-      and commodity ~ '(<%= Constants::LIQUID_TICKERS %>)'  
+    account ~ 'Assets:Investments:Taxable'
+    and commodity ~ '(<%= Constants::LIQUID_TICKERS %>)'  
     group by
-      commodity
-  ) x;
+    commodity
+    ) x;
 <% end %>
 
 <% @budget = BudgetSummaryReport.run(1, true) %>
@@ -22,104 +22,118 @@
 <% @budget_color = @budget_remaining > 0 ? '#00ff00' : '#ff0000' %>
 
 <% @last_updated_report = query do %>
-select
+    select
     max(updated_at at time zone 'UTC')
-from
+    from
     update_history
 <% end %>
 <%
 def relative_time(start_time)
-  diff_seconds = Time.now.utc - start_time.utc
-  case diff_seconds
-  when 0 .. 59
+    diff_seconds = Time.now.utc - start_time.utc
+    case diff_seconds
+when 0 .. 59
     return"#{diff_seconds.to_i} seconds ago"
-  when 60 .. (3600-1)
+when 60 .. (3600-1)
     return "#{(diff_seconds/60).to_i} minutes ago"
-  when 3600 .. (3600*24-1)
+when 3600 .. (3600*24-1)
     return "#{(diff_seconds/3600).to_i} hours ago"
-  when (3600*24) .. (3600*24*30) 
+when (3600*24) .. (3600*24*30) 
     return "#{(diff_seconds/(3600*24)).to_i} days ago"
-  else
+else
     return start_time.strftime("%m/%d/%Y")
-  end
+end
 end
 @last_updated = relative_time(@last_updated_report.rows[0][0].value)
 %>
 <html>
-  <head>
-    <title>Finances</title>
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/ledger.css">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-    <script type="text/javascript" src="/js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="/js/d3.min.js"></script>
-    <meta content='initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width' name='viewport'>
-    <meta content='yes' name='apple-mobile-web-app-capable'>
-    <meta content='yes' name='mobile-web-app-capable'>
-    <style>
-    @media print {
-      body {
-        margin: 0;
-        padding 0 !important;
-        max-width: 767px;
-      }
-      .container {
-        width: auto;
-        max-width: 767px;    
-      }
-      .navbar {
-        display: none;
-      }
-    }
-    </style>
-    <script>window.HTTP_AUTH = <%= env['HTTP_AUTHORIZATION'].to_json %>;</script>
-  </head>
-  <body>
-    <nav class="navbar navbar-default navbar-inverse navbar-fixed-top">
-      <div class="container">
-	<!-- Brand and toggle get grouped for better mobile display -->
-	<a href="/reports/_capture" class="capture button">+</a>
-	<div class="navbar-header">
-	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-	  </button>
-	  <a class="navbar-brand" href="#">Finances</a>
+    <head>
+	<title>Finances</title>
+	<link rel="stylesheet" href="/css/font-awesome.min.css">
+	<link rel="stylesheet" href="/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/css/AdminLTE.min.css">
+	<link rel="stylesheet" href="/css/ledger.css">
+	<link rel="stylesheet" href="/css/skins/_all-skins.min.css">
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+	<!-- <script type="text/javascript" src="/js/jquery-3.2.1.min.js"></script> -->
+	<script type="text/javascript" src="/js/jquery-3.2.1.min.js"></script>
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/adminlte.min.js"></script>
+	<script type="text/javascript" src="/js/d3.min.js"></script>
+	<meta content='initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width' name='viewport'>
+	<meta content='yes' name='apple-mobile-web-app-capable'>
+	<meta content='yes' name='mobile-web-app-capable'>
+	<style>
+	 @media print {
+	     body {
+		 margin: 0;
+		 padding 0 !important;
+		 max-width: 767px;
+	     }
+	     .container {
+		 width: auto;
+		 max-width: 767px;    
+	     }
+	     .navbar {
+		 display: none;
+	     }
+	 }
+	</style>
+	<script>
+	 window.HTTP_AUTH = <%= env['HTTP_AUTHORIZATION'].to_json %>;
+	 $(document).ready(function () {
+	     $('body').layout('fix');
+	 });
+	</script>
+    </head>
+    <body class="sidebar-mini skin-black">
+	<header class="main-header ">
+	    <!-- Header Navbar: style can be found in header.less -->
+	    <nav class="navbar navbar-fixed-top">
+		<header class="main-header ">
+		    <a href="/" class="logo">
+			<!-- mini logo for sidebar mini 50x50 pixels -->
+			<span class="logo-mini"><b>L</b></span>
+			<!-- logo for regular state and mobile devices -->
+			<span class="logo-lg"><b>Ledger</b>Web</span>
+		    </a>
+		</header>
+		<!-- Sidebar toggle button-->
+		<a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+		    <span class="sr-only">Toggle navigation</span>
+		</a>
+	    </nav>
+	</header>
+	<aside class="main-sidebar">
+	    <!-- sidebar: style can be found in sidebar.less -->
+	    <section class="sidebar" style="height: auto;">
+		<!-- search form -->
+		<form action="#" method="get" class="sidebar-form">
+		    <div class="input-group">
+			<input type="text" name="q" class="form-control" placeholder="Search...">
+			<span class="input-group-btn">
+			    <button type="submit" name="search" id="search-btn" class="btn btn-flat">
+				<i class="fa fa-search"></i>
+			    </button>
+			</span>
+		    </div>
+		</form>
+		<!-- /.search form -->
+		<!-- sidebar menu: : style can be found in sidebar.less -->
+		<ul class="sidebar-menu tree" data-widget="tree">
+		    <li class="header">MAIN NAVIGATION</li>
+		    <li><a href="/"><i class="fa fa-dashboard"></i> <span>Dashboard</span></a></li>
+		    <li><a href="/reports/balance_sheet"><i class="fa fa-balance-scale"></i> <span>Balance Sheet</span></a></li>
+		    <li><a href="/reports/cash_flow"><i class="fa fa-exchange"></i> <span>Cashflow</span></a></li>
+		    <li><a href="/reports/bills"><i class="fa fa-envelope-o"></i> <span>Bills</span></a></li>
+		    <li><a href="/reports/runway"><i class="fa fa-bar-chart"></i> <span>Runway</span></a></li>
+		    <li><a href="/reports/_register"><i class="fa fa-list"></i> <span>Transactions</span></a></li>
+		    <li><a href="/reports/update_history"><i class="fa fa-clock-o"></i> <span>Update History</span></a></li>
+		</ul>
+	    </section>
+	    <!-- /.sidebar -->
+	</aside>
+	<div class="content-wrapper">
+	    <%= yield %>
 	</div>
-
-	<!-- Collect the nav links, forms, and other content for toggling -->
-	<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-	  <ul class="nav navbar-nav">
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Reports <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <% @reports.each do |report| %>
-                  <% if report[0][0] != '_' %>
-                    <li><a href="/reports/<%= report[0] %>"><%= report[1] %></a></li>
-                  <% end %>
-                <% end %>
-              </ul>
-            </li>
-	  </ul>
-	  <p class="navbar-text navbar-left">Updated <%= @last_updated %>
-	  <form class="navbar-form navbar-right">
-            <div class="form-group">
-              <input type="text" class="form-control" placeholder="Search">
-            </div>
-            <button type="submit" class="btn btn-default">Submit</button>
-	  </form>
-	  <ul class="nav navbar-nav navbar-right">
-	    <li><a href="<%= @pdf_url %>">PDF</a></li>
-	  </ul>
-	  <p class="navbar-text navbar-right">(<a href="/reports/monthly_snapshot">B</a>: <span style="color: <%= @budget_color %>"><%= sprintf("$%0.2f", @budget_remaining) %></span>)</p>
-	</div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
-    </nav>
-    <div class="main container">
-      <%= yield %>
-    </div>
-  </body>
+    </body>
 </html>
