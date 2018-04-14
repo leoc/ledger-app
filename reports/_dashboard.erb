@@ -9,19 +9,26 @@
 </script>
 
 <%
-    filter = params[:filter] || "month,#{Date.today.strftime('%Y-%m-01')}"
-    timespan, date_str = filter.split(',')
-    @selected_date = Date.parse(date_str)
-    @trunc_to = timespan
-    if timespan == 'year'
-        @date_column = 'xtn_year'
-        @budget_clause = "date_trunc('year', xtn_month) = '#{@selected_date}'"
-    end
-    @date_column ||= 'xtn_month'
-    @register_param = @trunc_to
-    @date_clause = "#{@date_column} = '#{@selected_date}'"
-    @date_clause_lte = "#{@date_column} <= '#{@selected_date}'"
-    @budget_clause ||= @date_clause
+filter = params[:filter] || "month,#{Date.today.strftime('%Y-%m-01')}"
+timespan, date_str = filter.split(',')
+@selected_date = Date.parse(date_str)
+@last_date =
+if @selected_date.month == Date.today.month then
+    Date.today
+else
+    Date.new(@selected_date.year, @selected_date.month, 1).next_month.prev_day
+end
+
+@trunc_to = timespan
+if timespan == 'year'
+    @date_column = 'xtn_year'
+    @budget_clause = "date_trunc('year', xtn_month) = '#{@selected_date}'"
+end
+@date_column ||= 'xtn_month'
+@register_param = @trunc_to
+@date_clause = "#{@date_column} = '#{@selected_date}'"
+@date_clause_lte = "#{@date_column} <= '#{@selected_date}'"
+@budget_clause ||= @date_clause
 %>
 
 <% @months = query do %>
@@ -202,6 +209,20 @@
     from
     budgeted    
 <% end %>
+
+<% @kpis = query do %>
+    with
+    limits as (select ('<%= @last_date.strftime('%Y-%m-%d') %>'::date - (x || ' months')::interval)::date as xtn_date from generate_series(0,1) x)
+    select
+    xtn_date,
+    coalesce((select sum(-1 * amount) from ledger where account ~ 'Income' and date_trunc('month', limits.xtn_date) <= xtn_date and xtn_date <= limits.xtn_date), 0) as income,
+    coalesce((select sum(amount) from ledger where account ~ 'Expense' and date_trunc('month', limits.xtn_date) <= xtn_date and xtn_date <= limits.xtn_date), 0) as expenses,
+    coalesce((select sum(-1 * amount) from ledger where account ~ 'Income|Expense' and date_trunc('month', limits.xtn_date) <= xtn_date and xtn_date <= limits.xtn_date), 0) as net,
+    coalesce((select sum(amount) from ledger where account ~ 'Assets:Funds' and xtn_date <= limits.xtn_date), 0) as funds,
+    coalesce((select sum(amount) from ledger where account ~ 'Assets:(Cash|Fidor|DKB|PayPal)' and xtn_date <= limits.xtn_date), 0) as assets
+    from limits;
+<% end %>
+
 
 <% @unbudgeted_expenses = query do %>
     with ubexp as (
@@ -622,32 +643,74 @@ chart_data = {
 		</div>
 		<div class="box-footer">
 		    <div class="row">
-			<div class="col-sm-3 col-xs-6">
+			<%
+			def kpi_class(kpis, col, invert: false)
+                        previous = @kpis.rows[1][col].value
+                        current = @kpis.rows[0][col].value
+                        if previous > current && invert then 'text-green'
+                        elsif previous < current && invert then 'text-red'
+                        elsif previous > current then 'text-red'
+                        elsif previous < current then 'text-green'
+                        else 'text-yellow'
+                        end
+			end
+			
+			def kpi_icon(kpis, col, invert: false)
+                        previous = @kpis.rows[1][col].value
+                        current = @kpis.rows[0][col].value
+                        if previous > current then 'fa-caret-down'
+                        elsif previous < current then 'fa-caret-up'
+                        else 'fa-caret-left'
+                        end
+			end
+			
+			def kpi_trend(kpis, col)
+                        previous = @kpis.rows[1][col].value
+                        current = @kpis.rows[0][col].value
+                        if previous > current then sprintf('%0.2f', (previous - current).to_f / previous.to_f * -100.0)
+                        elsif previous < current then sprintf('%0.2f', (current - previous).to_f / previous.to_f * 100.0)
+                        else 0.0
+                        end
+			end
+			
+			def kpi_value(kpis, col)
+		        sprintf('%0.2f', @kpis.rows[0][col].value)
+			end
+			%>
+			
+			<div class="col-sm-2 col-xs-6">
 			    <div class="description-block border-right">
-				<span class="description-percentage text-green"><i class="fa fa-caret-up"></i> 17%</span>
-				<h5 class="description-header">$35,210.43</h5>
+				<span class="description-percentage <%= kpi_class(@kpis, 1) %>"><i class="fa <%= kpi_icon(@kpis, 1) %>"></i> <%= kpi_trend(@kpis, 1) %>%</span>
+				<h5 class="description-header"><%= kpi_value(@kpis, 1) %> €</h5>
 				<span class="description-text">INCOME</span>
 			    </div>
 			</div>
-			<div class="col-sm-3 col-xs-6">
+			<div class="col-sm-2 col-xs-6">
 			    <div class="description-block border-right">
-				<span class="description-percentage text-yellow"><i class="fa fa-caret-left"></i> 0%</span>
-				<h5 class="description-header">$10,390.90</h5>
+				<span class="description-percentage <%= kpi_class(@kpis, 2, invert: true) %>"><i class="fa <%= kpi_icon(@kpis, 2) %>"></i> <%= kpi_trend(@kpis, 2) %>%</span>
+				<h5 class="description-header"><%= kpi_value(@kpis, 2) %> €</h5>
 				<span class="description-text">EXPENSES</span>
 			    </div>
 			</div>
-			<div class="col-sm-3 col-xs-6">
+			<div class="col-sm-2 col-xs-6">
 			    <div class="description-block border-right">
-				<span class="description-percentage text-green"><i class="fa fa-caret-up"></i> 20%</span>
-				<h5 class="description-header">$24,813.53</h5>
-				<span class="description-text">TOTAL FUNDS</span>
+				<span class="description-percentage <%= kpi_class(@kpis, 3) %>"><i class="fa <%= kpi_icon(@kpis, 3) %>"></i> <%= kpi_trend(@kpis, 3) %>%</span>
+				<h5 class="description-header"><%= kpi_value(@kpis, 3) %> €</h5>
+				<span class="description-text">NET</span>
 			    </div>
 			</div>
-			<div class="col-sm-3 col-xs-6">
-			    <div class="description-block">
-				<span class="description-percentage text-red"><i class="fa fa-caret-down"></i> 18%</span>
-				<h5 class="description-header">1200</h5>
-				<span class="description-text">TOTAL ASSETS</span>
+			<div class="col-sm-2 col-xs-6">
+			    <div class="description-block border-right">
+				<span class="description-percentage <%= kpi_class(@kpis, 4) %>"><i class="fa <%= kpi_icon(@kpis, 4) %>"></i> <%= kpi_trend(@kpis, 4) %>%</span>
+				<h5 class="description-header"><%= kpi_value(@kpis, 4) %> €</h5>
+				<span class="description-text">FUND BALANCE</span>
+			    </div>
+			</div>
+			<div class="col-sm-2 col-xs-6">
+			    <div class="description-block border-right">
+				<span class="description-percentage <%= kpi_class(@kpis, 5) %>"><i class="fa <%= kpi_icon(@kpis, 5) %>"></i> <%= kpi_trend(@kpis, 5) %>%</span>
+				<h5 class="description-header"><%= kpi_value(@kpis, 5) %> €</h5>
+				<span class="description-text">ASSET BALANCE</span>
 			    </div>
 			</div>
 		    </div>
