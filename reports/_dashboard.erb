@@ -724,6 +724,8 @@ chart_data = {
 	 type: 'bar',
 	 data: <%= chart_data.to_json %>,
 	 options: {
+	     responsive: true,
+	     maintainAspectRatio: false,
 	     legend: {
 		 display: false
 	     },

@@ -36,3 +36,7 @@ nav a.capture.button:hover {
 .main-header .navbar {
   margin-left: 0 !important;
 }
+
+.chart {
+  height: 200px;
+}
